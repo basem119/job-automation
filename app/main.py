@@ -12,7 +12,9 @@ from config.settings import Settings
 from core.exceptions import ApplicationError, ConfigurationError
 from core.logging import configure_logging
 from core.version import version
+from infrastructure.sqlite.database import SQLiteDatabase
 from utils.filesystem import validate_required_directories
+from workflows.job_collection_workflow import JobCollectionWorkflow
 
 
 def main() -> int:
@@ -27,6 +29,12 @@ def main() -> int:
         validate_required_directories()
         logger.info("Filesystem validated")
 
+        database = SQLiteDatabase(settings.database_path)
+        workflow = JobCollectionWorkflow(database=database)
+        summary = workflow.run()
+
+        logger.info("Jobs downloaded: %s", summary["downloaded"])
+        logger.info("Jobs stored: %s", summary["stored"])
         logger.info("Application initialized successfully")
         logger.info("Application finished")
         return 0

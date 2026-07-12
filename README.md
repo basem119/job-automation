@@ -1,6 +1,15 @@
 # Job Automation Platform
 
-This project provides the foundation for an automation workflow application. The current milestone focuses on startup, configuration, structured logging, filesystem validation, and clean application initialization.
+This project currently implements Milestone 2: the first end-to-end job collection workflow.
+
+## Current milestone
+
+Milestone 2 includes:
+- RemoteOK API communication
+- RemoteOK response parsing
+- Generic Job model creation
+- SQLite database initialization and job insertion
+- Workflow execution logging
 
 ## Create a virtual environment
 
@@ -27,3 +36,13 @@ On Windows PowerShell:
 ```bash
 python app/main.py
 ```
+
+## What currently works
+
+- Application startup and configuration loading
+- Centralized logging
+- Filesystem validation
+- Automatic SQLite database creation
+- RemoteOK download and parsing
+- Job storage in SQLite
+- Workflow summary logging
