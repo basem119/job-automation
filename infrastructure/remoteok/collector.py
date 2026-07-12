@@ -1,12 +1,15 @@
 from __future__ import annotations
 
 from domain.job import Job
+from infrastructure.collectors.collector import Collector
 from infrastructure.remoteok.client import RemoteOkClient
 from infrastructure.remoteok.parser import RemoteOkParser
 
 
-class RemoteOkCollector:
+class RemoteOkCollector(Collector):
     """RemoteOK collector responsible only for download and parse orchestration."""
+
+    name = "RemoteOK"
 
     def __init__(self, client: RemoteOkClient | None = None, parser: RemoteOkParser | None = None) -> None:
         self.client = client or RemoteOkClient()

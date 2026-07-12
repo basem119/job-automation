@@ -36,6 +36,10 @@ On Windows PowerShell:
 ```bash
 python app/main.py
 ```
+## Run tests
+```bash
+python -m unittest discover -s tests -p "test_*.py"
+```
 
 ## What currently works
 

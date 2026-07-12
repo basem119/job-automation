@@ -13,7 +13,7 @@ class HttpClient:
     def __init__(self, timeout: int = 10) -> None:
         self.timeout = timeout
 
-    def get_json(self, url: str) -> list[dict[str, Any]]:
+    def get_json(self, url: str) -> Any:
         try:
             response = requests.get(url, timeout=self.timeout)
             response.raise_for_status()
@@ -26,8 +26,5 @@ class HttpClient:
             payload = response.json()
         except ValueError as exc:
             raise ApplicationError(f"Invalid JSON response from {url}") from exc
-
-        if not isinstance(payload, list):
-            raise ApplicationError(f"Unexpected JSON payload type from {url}")
 
         return payload

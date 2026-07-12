@@ -14,7 +14,7 @@ from core.logging import configure_logging
 from core.version import version
 from infrastructure.sqlite.database import SQLiteDatabase
 from utils.filesystem import validate_required_directories
-from workflows.job_collection_workflow import JobCollectionWorkflow
+from workflows.job_collection_workflow import JobCollectionWorkflow, build_collectors
 
 
 def main() -> int:
@@ -30,7 +30,7 @@ def main() -> int:
         logger.info("Filesystem validated")
 
         database = SQLiteDatabase(settings.database_path)
-        workflow = JobCollectionWorkflow(database=database)
+        workflow = JobCollectionWorkflow(collectors=build_collectors(settings), database=database)
         summary = workflow.run()
 
         logger.info("Jobs downloaded: %s", summary["downloaded"])

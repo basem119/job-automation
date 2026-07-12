@@ -27,6 +27,8 @@ class Settings:
             "DATABASE_PATH",
             DEFAULT_DATABASE_PATH,
         )
+        self.enable_remoteok = self._read_bool_setting(merged_env, "ENABLE_REMOTEOK", True)
+        self.enable_greenhouse = self._read_bool_setting(merged_env, "ENABLE_GREENHOUSE", True)
         self.openai_api_key = self._read_optional_setting(merged_env, "OPENAI_API_KEY")
         self.google_client_id = self._read_optional_setting(merged_env, "GOOGLE_CLIENT_ID")
         self.google_client_secret = self._read_optional_setting(merged_env, "GOOGLE_CLIENT_SECRET")
@@ -45,6 +47,17 @@ class Settings:
         if value is None:
             return ""
         return value.strip()
+
+    def _read_bool_setting(self, env: Mapping[str, str], name: str, default: bool) -> bool:
+        value = self._read_setting(env, name, str(default).lower())
+        normalized = value.strip().lower()
+
+        if normalized in {"1", "true", "yes", "on"}:
+            return True
+        if normalized in {"0", "false", "no", "off"}:
+            return False
+
+        return default
 
     def _read_path_setting(self, env: Mapping[str, str], name: str, default: str) -> Path:
         raw_value = self._read_setting(env, name, default)
