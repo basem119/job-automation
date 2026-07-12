@@ -11,7 +11,7 @@ logger = logging.getLogger("job_automation")
 
 
 class SQLiteDatabase:
-    """SQLite database wrapper with minimal initialization for milestone 2."""
+    """SQLite database wrapper with minimal initialization for milestone 3."""
 
     def __init__(self, database_path: Path | str | None = None) -> None:
         resolved_path = Path(database_path or project_root() / "data" / "jobs.db")
@@ -36,13 +36,51 @@ class SQLiteDatabase:
                     url TEXT NOT NULL,
                     description TEXT,
                     published_at TEXT,
+                    hash TEXT,
                     created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
                 )
                 """
             )
+            self._ensure_hash_column_and_index()
             self.connection.commit()
         except sqlite3.Error as exc:
             raise ApplicationError(f"Failed to initialize SQLite database: {exc}") from exc
+
+    def _ensure_hash_column_and_index(self) -> None:
+        columns = [row[1] for row in self.connection.execute("PRAGMA table_info(jobs)")]
+
+        if "hash" not in columns:
+            self.connection.execute("ALTER TABLE jobs ADD COLUMN hash TEXT")
+
+        rows = self.connection.execute(
+            "SELECT id, source, job_id, company, title, url FROM jobs WHERE hash IS NULL OR hash = ''"
+        ).fetchall()
+        for row in rows:
+            computed_hash = self._build_hash_from_row(row)
+            try:
+                self.connection.execute("UPDATE jobs SET hash = ? WHERE id = ?", (computed_hash, row["id"]))
+            except sqlite3.IntegrityError:
+                self.connection.execute("UPDATE jobs SET hash = ? WHERE id = ?", (f"{computed_hash}-{row['id']}", row["id"]))
+
+
+    @staticmethod
+    def _build_hash_from_row(row: sqlite3.Row) -> str:
+        source = (row["source"] or "").strip().lower()
+        job_id = (row["job_id"] or "").strip()
+
+        if not job_id:
+            seed = "|".join(
+                [
+                    source,
+                    (row["company"] or "").strip().lower(),
+                    (row["title"] or "").strip().lower(),
+                    (row["url"] or "").strip().lower(),
+                ]
+            )
+        else:
+            seed = "|".join([source, job_id])
+
+        return __import__("hashlib").sha256(seed.encode("utf-8")).hexdigest()
 
     def close(self) -> None:
         self.connection.close()

@@ -34,7 +34,8 @@ def main() -> int:
         summary = workflow.run()
 
         logger.info("Jobs downloaded: %s", summary["downloaded"])
-        logger.info("Jobs stored: %s", summary["stored"])
+        logger.info("Jobs inserted: %s", summary["inserted"])
+        logger.info("Jobs skipped (duplicates): %s", summary["duplicates"])
         logger.info("Application initialized successfully")
         logger.info("Application finished")
         return 0

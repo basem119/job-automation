@@ -40,15 +40,18 @@ class JobCollectionWorkflow:
         logger.info("Jobs parsed: %s", len(jobs))
         logger.info("Jobs downloaded: %s", len(jobs))
 
-        stored_count = self.repository.insert_jobs(jobs)
-        logger.info("Jobs stored: %s", stored_count)
+        summary = self.repository.insert_jobs(jobs)
+        logger.info("Jobs inserted: %s", summary["inserted"])
+        logger.info("Jobs skipped (duplicates): %s", summary["duplicates"])
 
         elapsed = time.perf_counter() - started_at
         logger.info("Total execution time: %.2f seconds", elapsed)
 
         return {
             "downloaded": len(jobs),
-            "stored": stored_count,
+            "inserted": summary["inserted"],
+            "duplicates": summary["duplicates"],
+            "total": summary["total"],
         }
 
 
@@ -62,7 +65,8 @@ def main() -> int:
     summary = workflow.run()
 
     logger.info("Jobs downloaded: %s", summary["downloaded"])
-    logger.info("Jobs stored: %s", summary["stored"])
+    logger.info("Jobs inserted: %s", summary["inserted"])
+    logger.info("Jobs skipped (duplicates): %s", summary["duplicates"])
     return 0
 
 

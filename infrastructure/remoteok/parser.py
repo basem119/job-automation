@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import logging
+import re
 from datetime import datetime
 from typing import Any
 
@@ -30,11 +31,11 @@ class RemoteOkParser:
         if not isinstance(item, dict):
             raise ValueError("Expected a dictionary record")
 
-        title = item.get("position") or item.get("title")
-        company = item.get("company") or item.get("company_name")
-        location = item.get("location") or item.get("geo")
-        url = item.get("url") or item.get("apply_url")
-        description = item.get("description") or item.get("snippet") or ""
+        title = self._normalize_text(item.get("position") or item.get("title"))
+        company = self._normalize_text(item.get("company") or item.get("company_name"))
+        location = self._normalize_text(item.get("location") or item.get("geo"))
+        url = self._normalize_url(item.get("url") or item.get("apply_url"))
+        description = self._normalize_text(item.get("description") or item.get("snippet") or "")
 
         if not title or not company or not location or not url:
             raise ValueError("Missing required job fields")
@@ -47,15 +48,17 @@ class RemoteOkParser:
 
         return Job(
             id=str(item.get("id") or url),
-            title=str(title),
-            company=str(company),
-            location=str(location),
-            description=str(description),
-            url=str(url),
+            title=title,
+            company=company,
+            location=location,
+            description=description,
+            url=url,
             source="remoteok",
             published_at=published_at,
-            salary=item.get("salary"),
+            salary=self._normalize_text(item.get("salary")),
             technologies=[str(value) for value in technologies],
+            normalized_location=self._normalize_location(location),
+            description_text=self._normalize_text(description),
         )
 
     @staticmethod
@@ -67,3 +70,35 @@ class RemoteOkParser:
             return datetime.fromisoformat(str(value).replace("Z", "+00:00"))
         except ValueError:
             return None
+
+    @staticmethod
+    def _normalize_text(value: Any) -> str:
+        if value in (None, ""):
+            return ""
+
+        text = str(value).strip()
+        if not text:
+            return ""
+
+        try:
+            latin1_bytes = text.encode("latin-1")
+            utf8_text = latin1_bytes.decode("utf-8")
+            if utf8_text != text:
+                return utf8_text
+        except UnicodeError:
+            pass
+
+        try:
+            return text.encode("utf-8").decode("utf-8")
+        except UnicodeError:
+            return text
+
+    @staticmethod
+    def _normalize_url(value: Any) -> str:
+        text = RemoteOkParser._normalize_text(value)
+        return text.strip()
+
+    @staticmethod
+    def _normalize_location(value: str) -> str:
+        text = RemoteOkParser._normalize_text(value)
+        return re.sub(r"\s+", " ", text).strip()

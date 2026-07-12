@@ -78,7 +78,8 @@ class RepositoryTests(unittest.TestCase):
             ]
 
             inserted = repository.insert_jobs(jobs)
-            self.assertEqual(inserted, 1)
+            self.assertEqual(inserted["inserted"], 1)
+            self.assertEqual(inserted["duplicates"], 0)
 
             database.close()
 
@@ -100,8 +101,8 @@ class WorkflowTests(unittest.TestCase):
                 ]
 
         class FakeRepository:
-            def insert_jobs(self, jobs: list[Job]) -> int:
-                return len(jobs)
+            def insert_jobs(self, jobs: list[Job]) -> dict[str, int]:
+                return {"inserted": len(jobs), "duplicates": 0, "total": len(jobs)}
 
         db_path = Path("tests/test_workflow.db")
         if db_path.exists():
@@ -116,7 +117,8 @@ class WorkflowTests(unittest.TestCase):
         stats = workflow.run()
 
         self.assertEqual(stats["downloaded"], 1)
-        self.assertEqual(stats["stored"], 1)
+        self.assertEqual(stats["inserted"], 1)
+        self.assertEqual(stats["duplicates"], 0)
 
         database.close()
         db_path.unlink(missing_ok=True)
