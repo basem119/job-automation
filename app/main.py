@@ -1,23 +1,39 @@
-from pathlib import Path
+from __future__ import annotations
+
 import logging
+import sys
+from pathlib import Path
 
-from dotenv import load_dotenv
+ROOT_DIR = Path(__file__).resolve().parent.parent
+if str(ROOT_DIR) not in sys.path:
+    sys.path.insert(0, str(ROOT_DIR))
 
-BASE_DIR = Path(__file__).resolve().parent.parent
+from config.settings import Settings
+from core.exceptions import ApplicationError, ConfigurationError
+from core.logging import configure_logging
+from core.version import version
+from utils.filesystem import validate_required_directories
 
-load_dotenv(BASE_DIR / ".env")
 
-logging.basicConfig(
-level=logging.INFO,
-format="%(asctime)s | %(levelname)s | %(message)s",
-)
+def main() -> int:
+    try:
+        settings = Settings.load()
+        logger = configure_logging(settings.log_level)
 
-logger = logging.getLogger(__name__)
+        logger.info("Application version: %s", version)
+        logger.info("Configuration loaded")
+        logger.info("Logging initialized")
 
-def main() -> None:
-    logger.info("Job Automation application started.")
-logger.info("Environment loaded successfully.")
-logger.info("Application finished successfully.")
+        validate_required_directories()
+        logger.info("Filesystem validated")
+
+        logger.info("Application initialized successfully")
+        logger.info("Application finished")
+        return 0
+    except (ApplicationError, ConfigurationError, ValueError) as exc:
+        logging.getLogger("job_automation").error("Application startup failed: %s", exc)
+        return 1
+
 
 if __name__ == "__main__":
-    main()
+    raise SystemExit(main())
