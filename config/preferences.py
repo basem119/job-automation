@@ -20,6 +20,11 @@ class TitlePreferences:
 @dataclass
 class TechnologyPreferences:
     required: list[str]
+    preferred: list[str] = None
+
+    def __post_init__(self) -> None:
+        if self.preferred is None:
+            self.preferred = []
 
 
 @dataclass
@@ -50,6 +55,7 @@ class Preferences:
             ),
             technologies=TechnologyPreferences(
                 required=[str(value).strip().lower() for value in payload.get("technologies", {}).get("required", [])],
+                preferred=[str(value).strip().lower() for value in payload.get("technologies", {}).get("preferred", [])],
             ),
             excluded_keywords=ExcludedKeywordPreferences(
                 keywords=[str(value).strip().lower() for value in payload.get("excluded_keywords", {}).get("keywords", [])],

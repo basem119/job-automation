@@ -47,8 +47,11 @@ def main() -> int:
         filter_summary = filtering_engine.run()
 
         logger.info("Jobs evaluated: %s", filter_summary["evaluated"])
-        logger.info("Jobs accepted: %s", filter_summary["accepted"])
+        logger.info("Jobs filtered: %s", filter_summary["filtered"])
         logger.info("Jobs rejected: %s", filter_summary["rejected"])
+        logger.info("Average score: %.2f", filter_summary["average_score"])
+        logger.info("Highest score: %s", filter_summary["highest_score"])
+        logger.info("Lowest score: %s", filter_summary["lowest_score"])
 
         logger.info("Application initialized successfully")
         logger.info("Application finished")

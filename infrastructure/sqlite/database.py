@@ -38,6 +38,9 @@ class SQLiteDatabase:
                     published_at TEXT,
                     hash TEXT,
                     status TEXT NOT NULL DEFAULT 'NEW',
+                    technologies TEXT,
+                    score INTEGER DEFAULT 0,
+                    filter_reason TEXT,
                     created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
                 )
                 """
@@ -45,6 +48,8 @@ class SQLiteDatabase:
             self._ensure_status_column()
             self._ensure_hash_column_and_index()
             self._ensure_technologies_column()
+            self._ensure_score_column()
+            self._ensure_filter_reason_column()
             self.connection.commit()
         except sqlite3.Error as exc:
             raise ApplicationError(f"Failed to initialize SQLite database: {exc}") from exc
@@ -76,6 +81,18 @@ class SQLiteDatabase:
 
         if "technologies" not in columns:
             self.connection.execute("ALTER TABLE jobs ADD COLUMN technologies TEXT")
+
+    def _ensure_score_column(self) -> None:
+        columns = [row[1] for row in self.connection.execute("PRAGMA table_info(jobs)")]
+
+        if "score" not in columns:
+            self.connection.execute("ALTER TABLE jobs ADD COLUMN score INTEGER DEFAULT 0")
+
+    def _ensure_filter_reason_column(self) -> None:
+        columns = [row[1] for row in self.connection.execute("PRAGMA table_info(jobs)")]
+
+        if "filter_reason" not in columns:
+            self.connection.execute("ALTER TABLE jobs ADD COLUMN filter_reason TEXT")
 
 
     @staticmethod

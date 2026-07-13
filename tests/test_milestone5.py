@@ -27,7 +27,9 @@ class RuleTests(unittest.TestCase):
             status="NEW",
         )
 
-        self.assertFalse(rule.evaluate(job))
+        result = rule.evaluate(job)
+        self.assertFalse(result.passed)
+        self.assertEqual(result.score, 0)
 
     def test_title_rule_accepts_matching_title(self) -> None:
         preferences = Preferences.load(Path("config/preferences.yaml"))
@@ -43,7 +45,9 @@ class RuleTests(unittest.TestCase):
             status="NEW",
         )
 
-        self.assertTrue(rule.evaluate(job))
+        result = rule.evaluate(job)
+        self.assertTrue(result.passed)
+        self.assertGreater(result.score, 0)
 
     def test_technology_rule_uses_required_technology(self) -> None:
         preferences = Preferences.load(Path("config/preferences.yaml"))
@@ -60,7 +64,9 @@ class RuleTests(unittest.TestCase):
             technologies=["c#", "sql server", "asp.net core"],
         )
 
-        self.assertTrue(rule.evaluate(job))
+        result = rule.evaluate(job)
+        self.assertTrue(result.passed)
+        self.assertGreater(result.score, 0)
 
     def test_excluded_keyword_rule_rejects_blocked_terms(self) -> None:
         preferences = Preferences.load(Path("config/preferences.yaml"))
@@ -79,7 +85,7 @@ class RuleTests(unittest.TestCase):
         # This test passes if excluded keywords are loaded
         # The rule should return True if no excluded keywords are found
         result = rule.evaluate(job)
-        self.assertIsInstance(result, bool)
+        self.assertIsNotNone(result.passed)
 
 
 class PreferencesTests(unittest.TestCase):
@@ -137,7 +143,7 @@ class FilteringEngineTests(unittest.TestCase):
             summary = engine.run()
 
             self.assertEqual(summary["evaluated"], 2)
-            self.assertEqual(summary["accepted"], 1)
+            self.assertEqual(summary["filtered"], 1)
             self.assertEqual(summary["rejected"], 1)
 
             accepted_row = database.connection.execute(

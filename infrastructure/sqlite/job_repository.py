@@ -30,6 +30,14 @@ class JobRepository:
         )
         self.database.connection.commit()
 
+    def update_job_result(self, job_id: int | str, status: str, score: int, reason: str) -> None:
+        """Update job status, score, and filter reason atomically."""
+        self.database.connection.execute(
+            "UPDATE jobs SET status = ?, score = ?, filter_reason = ? WHERE job_id = ?",
+            (status.strip().upper(), score, reason, job_id),
+        )
+        self.database.connection.commit()
+
     def insert_jobs(self, jobs: list[Job]) -> dict[str, int]:
         if not jobs:
             return {"inserted": 0, "duplicates": 0, "total": 0}

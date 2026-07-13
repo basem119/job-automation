@@ -31,31 +31,55 @@ class FilteringEngine:
             ExcludedKeywordRule(self.preferences),
         ]
 
-    def run(self) -> dict[str, int]:
+    def run(self) -> dict:
+        """Evaluate all NEW jobs, assign scores, update status and reason."""
         started_at = time.perf_counter()
         jobs = self.repository.load_new_jobs()
         evaluated = len(jobs)
         accepted = 0
         rejected = 0
+        scores: list[int] = []
 
         for job in jobs:
-            passed = all(rule.evaluate(job) for rule in self.rules)
-            if passed:
-                self.repository.update_status(job.id, "FILTERED")
-                accepted += 1
-            else:
-                self.repository.update_status(job.id, "REJECTED")
+            # Evaluate all rules
+            results = [rule.evaluate(job) for rule in self.rules]
+
+            # Check for rejections
+            rejected_result = next((r for r in results if not r.passed), None)
+            if rejected_result:
+                self.repository.update_job_result(job.id, "REJECTED", 0, rejected_result.reason)
                 rejected += 1
+            else:
+                # Calculate total score from all rule results
+                total_score = sum(r.score for r in results)
+                reason_parts = [r.reason for r in results if r.reason]
+                combined_reason = " | ".join(reason_parts)
+
+                self.repository.update_job_result(job.id, "FILTERED", total_score, combined_reason)
+                scores.append(total_score)
+                accepted += 1
 
         elapsed = time.perf_counter() - started_at
+        
+        # Calculate statistics
+        avg_score = sum(scores) / len(scores) if scores else 0
+        max_score = max(scores) if scores else 0
+        min_score = min(scores) if scores else 0
+
         logger.info("Jobs evaluated: %s", evaluated)
-        logger.info("Jobs accepted: %s", accepted)
+        logger.info("Jobs filtered: %s", accepted)
         logger.info("Jobs rejected: %s", rejected)
+        logger.info("Average score: %.2f", avg_score)
+        logger.info("Highest score: %s", max_score)
+        logger.info("Lowest score: %s", min_score)
         logger.info("Execution time: %.2f seconds", elapsed)
 
         return {
             "evaluated": evaluated,
-            "accepted": accepted,
+            "filtered": accepted,
             "rejected": rejected,
+            "average_score": avg_score,
+            "highest_score": max_score,
+            "lowest_score": min_score,
             "execution_time": elapsed,
         }
