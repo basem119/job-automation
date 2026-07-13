@@ -39,8 +39,9 @@ class SQLiteDatabase:
                     hash TEXT,
                     status TEXT NOT NULL DEFAULT 'NEW',
                     technologies TEXT,
-                    score INTEGER DEFAULT 0,
-                    filter_reason TEXT,
+                    recommendation_score INTEGER DEFAULT 0,
+                    recommendation_summary TEXT,
+                    recommendation_details TEXT,
                     created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
                 )
                 """
@@ -48,8 +49,7 @@ class SQLiteDatabase:
             self._ensure_status_column()
             self._ensure_hash_column_and_index()
             self._ensure_technologies_column()
-            self._ensure_score_column()
-            self._ensure_filter_reason_column()
+            self._ensure_recommendation_columns()
             self.connection.commit()
         except sqlite3.Error as exc:
             raise ApplicationError(f"Failed to initialize SQLite database: {exc}") from exc
@@ -93,6 +93,18 @@ class SQLiteDatabase:
 
         if "filter_reason" not in columns:
             self.connection.execute("ALTER TABLE jobs ADD COLUMN filter_reason TEXT")
+
+    def _ensure_recommendation_columns(self) -> None:
+        columns = [row[1] for row in self.connection.execute("PRAGMA table_info(jobs)")]
+
+        if "recommendation_score" not in columns:
+            self.connection.execute("ALTER TABLE jobs ADD COLUMN recommendation_score INTEGER DEFAULT 0")
+        
+        if "recommendation_summary" not in columns:
+            self.connection.execute("ALTER TABLE jobs ADD COLUMN recommendation_summary TEXT")
+        
+        if "recommendation_details" not in columns:
+            self.connection.execute("ALTER TABLE jobs ADD COLUMN recommendation_details TEXT")
 
 
     @staticmethod

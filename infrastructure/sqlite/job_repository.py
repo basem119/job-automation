@@ -38,6 +38,26 @@ class JobRepository:
         )
         self.database.connection.commit()
 
+    def update_recommendation(
+        self, job_id: int | str, status: str, score: int, summary: str, details: list
+    ) -> None:
+        """Update job with recommendation score, summary, and details atomically."""
+        details_json = json.dumps([
+            {"rule": d.rule, "score": d.score, "reason": d.reason}
+            for d in details
+        ]) if details else None
+        
+        self.database.connection.execute(
+            """
+            UPDATE jobs 
+            SET status = ?, recommendation_score = ?, 
+                recommendation_summary = ?, recommendation_details = ?
+            WHERE job_id = ?
+            """,
+            (status.strip().upper(), score, summary, details_json, job_id),
+        )
+        self.database.connection.commit()
+
     def insert_jobs(self, jobs: list[Job]) -> dict[str, int]:
         if not jobs:
             return {"inserted": 0, "duplicates": 0, "total": 0}

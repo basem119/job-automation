@@ -1,8 +1,10 @@
 location:
-  allowed:
+  preferred:
     - remote
     - worldwide
     - anywhere
+    - hybrid
+  acceptable_countries:
     - egypt
     - cairo
     - uae
@@ -12,13 +14,11 @@ location:
     - saudi arabia
     - riyadh
     - jeddah
-    - hybrid
-
-  rejected:
+  hard_reject:
     - onsite only
 
 title:
-  required:
+  primary:
     - backend engineer
     - backend developer
     - software engineer
@@ -31,31 +31,33 @@ title:
     - .net engineer
     - asp.net developer
     - c# developer
-
-  preferred:
-    - lead backend engineer
-    - technical lead
-    - backend lead
-    - team lead
-    - squad lead
-    - solution engineer
+  secondary:
     - platform engineer
     - cloud engineer
     - devops engineer
+    - technical lead
+    - engineering lead
+    - solution engineer
+    - staff software engineer
+    - principal software engineer
+  hard_reject:
+    - internship
+    - intern
+    - trainee
+    - volunteer
 
 experience:
-  required:
+  positive:
     - backend
     - microservices
-
-  preferred:
     - distributed systems
     - cloud
-    - event driven
-    - ci/cd
     - architecture
+    - ci/cd
+    - devops
     - scalable systems
-    - team leadership
+    - leadership
+    - event driven
     - agile
 
 technologies:
@@ -70,7 +72,8 @@ technologies:
     - sql
     - sql server
     - rest api
-
+    - python
+    - typescript
   preferred:
     - entity framework
     - ef core
@@ -87,7 +90,6 @@ technologies:
     - aws
     - terraform
     - github actions
-    - ci/cd
     - clean architecture
     - message bus
     - azure blob storage
@@ -96,38 +98,9 @@ technologies:
     - oauth
     - jwt
     - linux
-    - laravel
-    - php
 
-excluded_keywords:
-  keywords:
-    - internship
-    - intern
-    - trainee
-    - junior
-    - frontend
-    - frontend only
-    - react native
-    - flutter
-    - ios
-    - android
-    - qa
-    - quality assurance
-    - tester
-    - manual tester
-    - automation tester
-    - data analyst
-    - data scientist
-    - receptionist
-    - nurse
-    - dentist
-    - teacher
-    - accountant
-    - cashier
-    - sales
-    - marketing
-    - customer support
-    - call center
+recommendation:
+  minimum_score: 70
 
 
-    
+   

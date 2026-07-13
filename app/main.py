@@ -40,15 +40,16 @@ def main() -> int:
         logger.info("Jobs inserted: %s", summary["inserted"])
         logger.info("Jobs skipped (duplicates): %s", summary["duplicates"])
 
-        # Run filtering engine on newly inserted jobs
+        # Run recommendation engine on newly inserted jobs
         preferences = Preferences.load(Path("config/preferences.yaml"))
         repository = JobRepository(database)
         filtering_engine = FilteringEngine(database=database, repository=repository, preferences=preferences)
         filter_summary = filtering_engine.run()
 
         logger.info("Jobs evaluated: %s", filter_summary["evaluated"])
-        logger.info("Jobs filtered: %s", filter_summary["filtered"])
-        logger.info("Jobs rejected: %s", filter_summary["rejected"])
+        logger.info("Jobs recommended: %s", filter_summary["recommended"])
+        logger.info("Jobs not recommended: %s", filter_summary["not_recommended"])
+        logger.info("Jobs hard rejected: %s", filter_summary["hard_rejected"])
         logger.info("Average score: %.2f", filter_summary["average_score"])
         logger.info("Highest score: %s", filter_summary["highest_score"])
         logger.info("Lowest score: %s", filter_summary["lowest_score"])
