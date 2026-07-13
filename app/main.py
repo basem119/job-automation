@@ -9,10 +9,13 @@ if str(ROOT_DIR) not in sys.path:
     sys.path.insert(0, str(ROOT_DIR))
 
 from config.settings import Settings
+from config.preferences import Preferences
 from core.exceptions import ApplicationError, ConfigurationError
+from core.filtering.engine import FilteringEngine
 from core.logging import configure_logging
 from core.version import version
 from infrastructure.sqlite.database import SQLiteDatabase
+from infrastructure.sqlite.job_repository import JobRepository
 from utils.filesystem import validate_required_directories
 from workflows.job_collection_workflow import JobCollectionWorkflow, build_collectors
 
@@ -36,6 +39,17 @@ def main() -> int:
         logger.info("Jobs downloaded: %s", summary["downloaded"])
         logger.info("Jobs inserted: %s", summary["inserted"])
         logger.info("Jobs skipped (duplicates): %s", summary["duplicates"])
+
+        # Run filtering engine on newly inserted jobs
+        preferences = Preferences.load(Path("config/preferences.yaml"))
+        repository = JobRepository(database)
+        filtering_engine = FilteringEngine(database=database, repository=repository, preferences=preferences)
+        filter_summary = filtering_engine.run()
+
+        logger.info("Jobs evaluated: %s", filter_summary["evaluated"])
+        logger.info("Jobs accepted: %s", filter_summary["accepted"])
+        logger.info("Jobs rejected: %s", filter_summary["rejected"])
+
         logger.info("Application initialized successfully")
         logger.info("Application finished")
         return 0

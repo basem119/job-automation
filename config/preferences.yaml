@@ -1,0 +1,130 @@
+location:
+  allowed:
+    - remote
+    - worldwide
+    - anywhere
+    - egypt
+    - cairo
+    - uae
+    - dubai
+    - abu dhabi
+    - sharjah
+    - saudi arabia
+    - riyadh
+    - jeddah
+    - hybrid
+
+  rejected:
+    - onsite only
+
+title:
+  required:
+    - backend engineer
+    - backend developer
+    - software engineer
+    - software developer
+    - senior backend engineer
+    - senior backend developer
+    - senior software engineer
+    - senior software developer
+    - .net developer
+    - .net engineer
+    - asp.net developer
+    - c# developer
+
+  preferred:
+    - lead backend engineer
+    - technical lead
+    - backend lead
+    - team lead
+    - squad lead
+    - solution engineer
+    - platform engineer
+    - cloud engineer
+    - devops engineer
+
+experience:
+  required:
+    - backend
+    - microservices
+
+  preferred:
+    - distributed systems
+    - cloud
+    - event driven
+    - ci/cd
+    - architecture
+    - scalable systems
+    - team leadership
+    - agile
+
+technologies:
+  required:
+    - c#
+    - .net
+    - .net core
+    - .net 6
+    - .net 7
+    - .net 8
+    - asp.net core
+    - sql
+    - sql server
+    - rest api
+
+  preferred:
+    - entity framework
+    - ef core
+    - docker
+    - kubernetes
+    - redis
+    - kafka
+    - rabbitmq
+    - postgresql
+    - mysql
+    - nosql
+    - cosmos db
+    - azure
+    - aws
+    - terraform
+    - github actions
+    - ci/cd
+    - clean architecture
+    - message bus
+    - azure blob storage
+    - grpc
+    - graphql
+    - oauth
+    - jwt
+    - linux
+    - laravel
+    - php
+
+excluded_keywords:
+  keywords:
+    - internship
+    - intern
+    - trainee
+    - junior
+    - frontend
+    - frontend only
+    - react native
+    - flutter
+    - ios
+    - android
+    - qa
+    - quality assurance
+    - tester
+    - manual tester
+    - automation tester
+    - data analyst
+    - data scientist
+    - receptionist
+    - nurse
+    - dentist
+    - teacher
+    - accountant
+    - cashier
+    - sales
+    - marketing
+    - customer support
+    - call center

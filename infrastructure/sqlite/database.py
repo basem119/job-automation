@@ -37,14 +37,23 @@ class SQLiteDatabase:
                     description TEXT,
                     published_at TEXT,
                     hash TEXT,
+                    status TEXT NOT NULL DEFAULT 'NEW',
                     created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
                 )
                 """
             )
+            self._ensure_status_column()
             self._ensure_hash_column_and_index()
+            self._ensure_technologies_column()
             self.connection.commit()
         except sqlite3.Error as exc:
             raise ApplicationError(f"Failed to initialize SQLite database: {exc}") from exc
+
+    def _ensure_status_column(self) -> None:
+        columns = [row[1] for row in self.connection.execute("PRAGMA table_info(jobs)")]
+
+        if "status" not in columns:
+            self.connection.execute("ALTER TABLE jobs ADD COLUMN status TEXT NOT NULL DEFAULT 'NEW'")
 
     def _ensure_hash_column_and_index(self) -> None:
         columns = [row[1] for row in self.connection.execute("PRAGMA table_info(jobs)")]
@@ -61,6 +70,12 @@ class SQLiteDatabase:
                 self.connection.execute("UPDATE jobs SET hash = ? WHERE id = ?", (computed_hash, row["id"]))
             except sqlite3.IntegrityError:
                 self.connection.execute("UPDATE jobs SET hash = ? WHERE id = ?", (f"{computed_hash}-{row['id']}", row["id"]))
+
+    def _ensure_technologies_column(self) -> None:
+        columns = [row[1] for row in self.connection.execute("PRAGMA table_info(jobs)")]
+
+        if "technologies" not in columns:
+            self.connection.execute("ALTER TABLE jobs ADD COLUMN technologies TEXT")
 
 
     @staticmethod

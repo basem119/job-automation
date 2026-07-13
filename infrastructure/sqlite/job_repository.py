@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import hashlib
+import json
 import logging
 from typing import Any
 
@@ -15,6 +16,19 @@ class JobRepository:
 
     def __init__(self, database: SQLiteDatabase) -> None:
         self.database = database
+
+    def load_new_jobs(self) -> list[Job]:
+        rows = self.database.connection.execute(
+            "SELECT * FROM jobs WHERE status = 'NEW' ORDER BY id"
+        ).fetchall()
+        return [self._row_to_job(row) for row in rows]
+
+    def update_status(self, job_id: int | str, status: str) -> None:
+        self.database.connection.execute(
+            "UPDATE jobs SET status = ? WHERE job_id = ?",
+            (status.strip().upper(), job_id),
+        )
+        self.database.connection.commit()
 
     def insert_jobs(self, jobs: list[Job]) -> dict[str, int]:
         if not jobs:
@@ -47,8 +61,10 @@ class JobRepository:
                         url,
                         description,
                         published_at,
-                        hash
-                    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+                        hash,
+                    status,
+                    technologies
+                    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                     """,
                     (
                         job.id,
@@ -60,6 +76,8 @@ class JobRepository:
                         job.description,
                         job.published_at.isoformat() if job.published_at else None,
                         job_hash,
+                        (job.status or "NEW").strip().upper(),
+                        json.dumps(job.technologies) if job.technologies else None,
                     ),
                 )
             except Exception:
@@ -75,6 +93,28 @@ class JobRepository:
             "duplicates": duplicate_count,
             "total": inserted_count + duplicate_count,
         }
+
+    @staticmethod
+    def _row_to_job(row: Any) -> Job:
+        technologies = None
+        if row["technologies"]:
+            try:
+                technologies = json.loads(row["technologies"])
+            except (json.JSONDecodeError, TypeError):
+                technologies = None
+
+        return Job(
+            id=str(row["job_id"]),
+            title=row["title"],
+            company=row["company"],
+            location=row["location"],
+            description=row["description"] or "",
+            url=row["url"],
+            source=row["source"],
+            published_at=row["published_at"],
+            status=row["status"],
+            technologies=technologies,
+        )
 
     @staticmethod
     def build_hash(job: Job) -> str:

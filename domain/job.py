@@ -22,3 +22,4 @@ class Job(BaseModel):
     technologies: list[str] | None = Field(default=None, description="Skills or technologies")
     normalized_location: str | None = Field(default=None, description="Normalized location")
     description_text: str | None = Field(default=None, description="Normalized description text")
+    status: str = Field(default="NEW", description="Job status: NEW, FILTERED, or REJECTED")
