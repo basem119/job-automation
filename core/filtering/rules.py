@@ -34,7 +34,7 @@ class LocationRule:
     """Score based on location preference."""
     REMOTE_SCORE = 15
     PREFERRED_LOCATION_SCORE = 10
-    OTHER_COUNTRY_PENALTY = -5
+    OTHER_COUNTRY_PENALTY = 0
 
     def __init__(self, preferences: Preferences) -> None:
         self.preferences = preferences
@@ -141,7 +141,7 @@ class TechnologyRule:
     """Score based on required and preferred technologies."""
     REQUIRED_TECHNOLOGY_SCORE = 30
     PREFERRED_TECHNOLOGY_SCORE = 10
-    MISSING_REQUIRED_PENALTY = -20
+    MISSING_REQUIRED_PENALTY = 0
     MAX_PREFERRED_BONUS = 30
 
     def __init__(self, preferences: Preferences) -> None:

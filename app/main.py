@@ -20,6 +20,7 @@ from infrastructure.sqlite.job_repository import JobRepository
 from utils.filesystem import validate_required_directories
 from workflows.job_collection_workflow import JobCollectionWorkflow, build_collectors
 from workflows.job_analysis_workflow import JobAnalysisWorkflow
+from workflows.recruiter_discovery_workflow import RecruiterDiscoveryWorkflow
 
 
 def main() -> int:
@@ -40,7 +41,7 @@ def main() -> int:
 
         logger.info("Jobs downloaded: %s", summary["downloaded"])
         logger.info("Jobs inserted: %s", summary["inserted"])
-        logger.info("Jobs skipped (duplicates): %s", summary["duplicates"])
+        # logger.info("Jobs skipped (duplicates): %s", summary["duplicates"])
 
         # Run recommendation engine on newly inserted jobs
         preferences = Preferences.load(Path("config/preferences.yaml"))
@@ -69,6 +70,19 @@ def main() -> int:
         logger.info("Job analysis - Already analyzed: %s", analysis_summary["already_analyzed"])
         logger.info("Job analysis - New analyses: %s", analysis_summary["new_analyses"])
         logger.info("Job analysis - Execution time: %.2f seconds", analysis_summary["execution_time"])
+
+        # Run recruiter discovery on recommended jobs
+        recruiter_workflow = RecruiterDiscoveryWorkflow(
+            database=database,
+            job_repository=repository,
+        )
+        recruiter_summary = recruiter_workflow.run()
+
+        logger.info("Recruiter discovery - Recommended jobs: %s", recruiter_summary["recommended_jobs"])
+        logger.info("Recruiter discovery - Already discovered: %s", recruiter_summary["already_discovered"])
+        logger.info("Recruiter discovery - Recruiters found: %s", recruiter_summary["recruiters_found"])
+        logger.info("Recruiter discovery - Recruiters missing: %s", recruiter_summary["recruiters_missing"])
+        logger.info("Recruiter discovery - Execution time: %.2f seconds", recruiter_summary["execution_time"])
 
         logger.info("Application initialized successfully")
         logger.info("Application finished")

@@ -38,6 +38,21 @@ class JobRepository:
         ).fetchall()
         return [self._row_to_job(row) for row in rows]
 
+    def find_rows_by_status(self, status: str) -> list:
+        """Find all job rows with given status (raw database rows).
+        
+        Args:
+            status: Job status to search for
+            
+        Returns:
+            List of sqlite3.Row objects (allows dict-like access)
+        """
+        rows = self.database.connection.execute(
+            "SELECT * FROM jobs WHERE status = ? ORDER BY id",
+            (status.strip().upper(),),
+        ).fetchall()
+        return rows
+
     def update_status(self, job_id: int | str, status: str) -> None:
         self.database.connection.execute(
             "UPDATE jobs SET status = ? WHERE job_id = ?",
@@ -70,6 +85,29 @@ class JobRepository:
             WHERE job_id = ?
             """,
             (status.strip().upper(), score, summary, details_json, job_id),
+        )
+        self.database.connection.commit()
+
+    def update_recruiter(
+        self, job_id: int | str, email: str, name: str, source: str, confidence: int
+    ) -> None:
+        """Update job with recruiter contact information.
+        
+        Args:
+            job_id: Job ID to update
+            email: Recruiter email address
+            name: Recruiter name
+            source: Discovery strategy that found the recruiter
+            confidence: Confidence score (0-100)
+        """
+        self.database.connection.execute(
+            """
+            UPDATE jobs 
+            SET recruiter_email = ?, recruiter_name = ?, 
+                recruiter_source = ?, recruiter_confidence = ?
+            WHERE job_id = ?
+            """,
+            (email, name, source, confidence, job_id),
         )
         self.database.connection.commit()
 
