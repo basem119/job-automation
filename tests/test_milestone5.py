@@ -224,11 +224,11 @@ class TechnologyRuleTests(unittest.TestCase):
             title="Backend Engineer",
             company="Example",
             location="Remote",
-            description="Python and Django",
+            description="JavaScript and Node.js",
             url="https://example.com/2",
             source="remoteok",
             status="NEW",
-            technologies=["python", "django"],
+            technologies=["javascript", "nodejs"],
         )
 
         result = rule.evaluate(job)

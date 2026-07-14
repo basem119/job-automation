@@ -10,6 +10,7 @@ if str(ROOT_DIR) not in sys.path:
 
 from config.settings import Settings
 from config.preferences import Preferences
+from config.profile import Profile
 from core.exceptions import ApplicationError, ConfigurationError
 from core.filtering.engine import FilteringEngine
 from core.logging import configure_logging
@@ -18,6 +19,7 @@ from infrastructure.sqlite.database import SQLiteDatabase
 from infrastructure.sqlite.job_repository import JobRepository
 from utils.filesystem import validate_required_directories
 from workflows.job_collection_workflow import JobCollectionWorkflow, build_collectors
+from workflows.job_analysis_workflow import JobAnalysisWorkflow
 
 
 def main() -> int:
@@ -53,6 +55,20 @@ def main() -> int:
         logger.info("Average score: %.2f", filter_summary["average_score"])
         logger.info("Highest score: %s", filter_summary["highest_score"])
         logger.info("Lowest score: %s", filter_summary["lowest_score"])
+
+        # Run job analysis on recommended jobs
+        profile = Profile.load()
+        analysis_workflow = JobAnalysisWorkflow(
+            database=database,
+            job_repository=repository,
+            profile=profile,
+        )
+        analysis_summary = analysis_workflow.run()
+
+        logger.info("Job analysis - Recommended jobs: %s", analysis_summary["recommended_jobs"])
+        logger.info("Job analysis - Already analyzed: %s", analysis_summary["already_analyzed"])
+        logger.info("Job analysis - New analyses: %s", analysis_summary["new_analyses"])
+        logger.info("Job analysis - Execution time: %.2f seconds", analysis_summary["execution_time"])
 
         logger.info("Application initialized successfully")
         logger.info("Application finished")

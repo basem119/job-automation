@@ -1,0 +1,166 @@
+name: Basem Maher
+title: Senior Backend Engineer
+location: Egypt
+
+experience:
+  years: 4
+
+summary: |
+  Senior Backend Engineer specializing in designing and building scalable
+  backend systems using C#, .NET, ASP.NET Core, and SQL Server.
+  Experienced in Microservices, REST APIs, distributed systems,
+  Docker, cloud platforms, CI/CD pipelines, and modern software architecture.
+  Passionate about clean architecture, automation, and building
+  maintainable production-ready applications.
+
+skills:
+  core:
+    - C#
+    - .NET
+    - .NET Core
+    - .NET 6
+    - .NET 7
+    - .NET 8
+    - ASP.NET Core
+    - REST API
+    - Web API
+    - SQL
+    - SQL Server
+
+  architecture:
+    - Microservices
+    - Clean Architecture
+    - Distributed Systems
+    - Event-Driven Architecture
+    - Design Patterns
+    - Dependency Injection
+
+  frameworks:
+    - Entity Framework Core
+    - LINQ
+    - AutoMapper
+    - FluentValidation
+    - MediatR
+    - xUnit
+    - Moq
+
+  cloud:
+    - Microsoft Azure
+    - AWS
+
+  containers:
+    - Docker
+    - Docker Compose
+    - Kubernetes
+
+  databases:
+    - SQL Server
+    - PostgreSQL
+    - MySQL
+    - Redis
+    - Cosmos DB
+
+  messaging:
+    - RabbitMQ
+    - Kafka
+
+  devops:
+    - Git
+    - GitHub
+    - GitHub Actions
+    - Azure DevOps
+    - CI/CD
+    - Terraform
+    - Linux
+    - Nginx
+    - Traefik
+
+  web:
+    - OAuth
+    - JWT
+    - GraphQL
+
+  secondary:
+    - Laravel
+    - PHP
+    - Python
+
+strengths:
+  - Backend Development
+  - API Design
+  - Microservices
+  - System Design
+  - Distributed Systems
+  - Performance Optimization
+  - Software Architecture
+  - CI/CD
+  - Cloud Solutions
+  - Production Troubleshooting
+  - Team Collaboration
+  - Technical Leadership
+
+preferred_domains:
+  - SaaS
+  - FinTech
+  - Healthcare
+  - E-Commerce
+  - ERP
+  - Cloud Platforms
+  - AI Platforms
+  - Automation
+
+preferred_roles:
+  - Senior Backend Engineer
+  - Backend Engineer
+  - Senior Software Engineer
+  - Software Engineer
+  - Backend Developer
+  - Senior Backend Developer
+  - Platform Engineer
+  - Technical Lead
+  - Solution Engineer
+
+certifications: []
+
+languages:
+  - English
+  - Arabic
+
+availability:
+  notice_period_days: 30
+  remote_preference: preferred
+  hybrid_preference: preferred
+  relocation_willing: true
+
+resume_profiles:
+  backend: resume-backend.pdf
+  devops: resume-devops.pdf
+  cloud: resume-cloud.pdf
+
+career_goals:
+  primary_stack:
+    - C#
+    - .NET
+    - ASP.NET Core
+
+  secondary_stack:
+    - Docker
+    - Kubernetes
+    - Azure
+    - AWS
+    - Terraform
+    - PostgreSQL
+    - Redis
+    - RabbitMQ
+    - Kafka
+
+  interested_in:
+    - Backend Development
+    - Cloud Engineering
+    - Distributed Systems
+    - AI Automation
+    - DevOps
+
+github: "https://github.com/basem119"
+linkedin: ""
+portfolio: ""

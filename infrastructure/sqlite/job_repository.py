@@ -23,6 +23,21 @@ class JobRepository:
         ).fetchall()
         return [self._row_to_job(row) for row in rows]
 
+    def find_by_status(self, status: str) -> list[Job]:
+        """Find all jobs with given status.
+        
+        Args:
+            status: Job status to search for
+            
+        Returns:
+            List of Job objects
+        """
+        rows = self.database.connection.execute(
+            "SELECT * FROM jobs WHERE status = ? ORDER BY id",
+            (status.strip().upper(),),
+        ).fetchall()
+        return [self._row_to_job(row) for row in rows]
+
     def update_status(self, job_id: int | str, status: str) -> None:
         self.database.connection.execute(
             "UPDATE jobs SET status = ? WHERE job_id = ?",

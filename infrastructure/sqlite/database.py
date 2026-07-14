@@ -50,6 +50,7 @@ class SQLiteDatabase:
             self._ensure_hash_column_and_index()
             self._ensure_technologies_column()
             self._ensure_recommendation_columns()
+            self._create_job_analysis_table()
             self.connection.commit()
         except sqlite3.Error as exc:
             raise ApplicationError(f"Failed to initialize SQLite database: {exc}") from exc
@@ -106,8 +107,28 @@ class SQLiteDatabase:
         if "recommendation_details" not in columns:
             self.connection.execute("ALTER TABLE jobs ADD COLUMN recommendation_details TEXT")
 
+    def _create_job_analysis_table(self) -> None:
+        """Create job_analysis table for AI provider analysis results."""
+        self.connection.execute(
+            """
+            CREATE TABLE IF NOT EXISTS job_analysis (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                job_id TEXT NOT NULL,
+                provider TEXT NOT NULL,
+                match_summary TEXT,
+                strengths TEXT,
+                missing_skills TEXT,
+                recommended_resume TEXT,
+                email_highlights TEXT,
+                confidence INTEGER,
+                created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                UNIQUE(job_id, provider),
+                FOREIGN KEY(job_id) REFERENCES jobs(job_id)
+            )
+            """
+        )
 
-    @staticmethod
+
     def _build_hash_from_row(row: sqlite3.Row) -> str:
         source = (row["source"] or "").strip().lower()
         job_id = (row["job_id"] or "").strip()
