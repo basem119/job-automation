@@ -51,6 +51,7 @@ class SQLiteDatabase:
             self._ensure_technologies_column()
             self._ensure_recommendation_columns()
             self._ensure_recruiter_columns()
+            self._ensure_draft_columns()
             self._create_job_analysis_table()
             self.connection.commit()
         except sqlite3.Error as exc:
@@ -123,6 +124,19 @@ class SQLiteDatabase:
         
         if "recruiter_confidence" not in columns:
             self.connection.execute("ALTER TABLE jobs ADD COLUMN recruiter_confidence INTEGER DEFAULT 0")
+
+    def _ensure_draft_columns(self) -> None:
+        """Ensure draft-related columns exist in jobs table."""
+        columns = [row[1] for row in self.connection.execute("PRAGMA table_info(jobs)")]
+
+        if "draft_id" not in columns:
+            self.connection.execute("ALTER TABLE jobs ADD COLUMN draft_id TEXT")
+        
+        if "draft_created_at" not in columns:
+            self.connection.execute("ALTER TABLE jobs ADD COLUMN draft_created_at TEXT")
+        
+        if "processing_notes" not in columns:
+            self.connection.execute("ALTER TABLE jobs ADD COLUMN processing_notes TEXT")
 
     def _create_job_analysis_table(self) -> None:
         """Create job_analysis table for AI provider analysis results."""

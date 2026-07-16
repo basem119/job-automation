@@ -1,3 +1,8 @@
 python-dotenv
 requests
 pydantic
+
+# Gmail API (OAuth Desktop flow for personal account draft creation)
+google-auth-oauthlib
+google-auth-httplib2
+google-api-python-client

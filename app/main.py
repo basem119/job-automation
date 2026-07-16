@@ -21,6 +21,7 @@ from utils.filesystem import validate_required_directories
 from workflows.job_collection_workflow import JobCollectionWorkflow, build_collectors
 from workflows.job_analysis_workflow import JobAnalysisWorkflow
 from workflows.recruiter_discovery_workflow import RecruiterDiscoveryWorkflow
+from workflows.application_draft_workflow import ApplicationDraftWorkflow
 
 
 def main() -> int:
@@ -83,6 +84,19 @@ def main() -> int:
         logger.info("Recruiter discovery - Recruiters found: %s", recruiter_summary["recruiters_found"])
         logger.info("Recruiter discovery - Recruiters missing: %s", recruiter_summary["recruiters_missing"])
         logger.info("Recruiter discovery - Execution time: %.2f seconds", recruiter_summary["execution_time"])
+
+        # Run application draft generation on recommended jobs
+        draft_workflow = ApplicationDraftWorkflow(repository=repository)
+        draft_summary = draft_workflow.run()
+
+        logger.info("Application draft - Recommended jobs:       %s", draft_summary["recommended_jobs"])
+        logger.info("Application draft - Recruiter found:         %s", draft_summary["recruiter_discovery_found"])
+        logger.info("Application draft - Applications built:      %s", draft_summary["applications_built"])
+        logger.info("Application draft - Drafts created:          %s", draft_summary["drafts_created"])
+        logger.info("Application draft - Drafts with recipient:   %s", draft_summary["drafts_with_recipient"])
+        logger.info("Application draft - Drafts without recipient:%s", draft_summary["drafts_without_recipient"])
+        logger.info("Application draft - Validation failures:     %s", draft_summary["validation_failures"])
+        logger.info("Application draft - Draft failures:          %s", draft_summary["draft_failures"])
 
         logger.info("Application initialized successfully")
         logger.info("Application finished")

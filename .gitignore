@@ -32,6 +32,11 @@ Thumbs.db
 
 *.db
 
+# Gmail secrets — never commit
+config/gmail_credentials.json
+config/gmail_oauth_client.json
+shared/oauth/token.json
+
 # Testing
 
 .pytest_cache/
@@ -47,3 +52,5 @@ htmlcov/
 dist/
 build/
 *.egg-info/
+
+config/gmail_credentials.json

@@ -111,6 +111,27 @@ class JobRepository:
         )
         self.database.connection.commit()
 
+    def update_draft(
+        self, job_id: int | str, draft_id: str, processing_notes: str = ""
+    ) -> None:
+        """Update job with Gmail draft information.
+        
+        Args:
+            job_id: Job ID to update
+            draft_id: Gmail draft ID
+            processing_notes: Any processing notes or errors during draft creation
+        """
+        self.database.connection.execute(
+            """
+            UPDATE jobs 
+            SET draft_id = ?, draft_created_at = CURRENT_TIMESTAMP, 
+                processing_notes = ?
+            WHERE job_id = ?
+            """,
+            (draft_id, processing_notes, job_id),
+        )
+        self.database.connection.commit()
+
     def insert_jobs(self, jobs: list[Job]) -> dict[str, int]:
         if not jobs:
             return {"inserted": 0, "duplicates": 0, "total": 0}
