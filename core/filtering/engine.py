@@ -6,6 +6,7 @@ import time
 from pathlib import Path
 
 from config.preferences import Preferences
+from config.settings import Settings
 from core.filtering.rules import ExperienceRule, HardRejectRule, LocationRule, TechnologyRule, TitleRule
 from infrastructure.sqlite.database import SQLiteDatabase
 from infrastructure.sqlite.job_repository import JobRepository
@@ -22,7 +23,8 @@ class RecommendationEngine:
         repository: JobRepository | None = None,
         preferences: Preferences | None = None,
     ) -> None:
-        self.database = database or SQLiteDatabase()
+        settings = Settings.load()
+        self.database = database or SQLiteDatabase(settings.database_path)
         self.repository = repository or JobRepository(self.database)
         self.preferences = preferences or Preferences.load(Path("config/preferences.yaml"))
         self.hard_reject_rule = HardRejectRule(self.preferences)

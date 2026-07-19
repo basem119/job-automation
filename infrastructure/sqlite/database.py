@@ -4,8 +4,9 @@ import logging
 import sqlite3
 from pathlib import Path
 
+from config.settings import Settings
 from core.exceptions import ApplicationError
-from utils.filesystem import ensure_directory, project_root
+from utils.filesystem import ensure_directory
 
 logger = logging.getLogger("job_automation")
 
@@ -14,7 +15,7 @@ class SQLiteDatabase:
     """SQLite database wrapper with minimal initialization for milestone 3."""
 
     def __init__(self, database_path: Path | str | None = None) -> None:
-        resolved_path = Path(database_path or project_root() / "data" / "jobs.db")
+        resolved_path = Path(database_path) if database_path is not None else Settings.load().database_path
         ensure_directory(resolved_path.parent)
         self.database_path = resolved_path
         self.connection = sqlite3.connect(self.database_path)

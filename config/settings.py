@@ -7,10 +7,14 @@ from typing import Mapping
 from dotenv import load_dotenv
 
 from core.exceptions import ConfigurationError
-from utils.filesystem import project_root
+from utils.filesystem import ensure_directory, project_root
 
 DEFAULT_LOG_LEVEL = "INFO"
-DEFAULT_DATABASE_PATH = "data/jobs.db"
+DEFAULT_SQLITE_DATABASE = "shared/database/jobs.db"
+DEFAULT_RESUME_DIRECTORY = "shared/resumes"
+DEFAULT_GMAIL_OAUTH_CLIENT = "config/gmail_oauth_client.json"
+DEFAULT_GMAIL_TOKEN = "shared/oauth/token.json"
+DEFAULT_LOG_DIRECTORY = "shared/logs"
 
 
 class Settings:
@@ -24,15 +28,32 @@ class Settings:
         self.log_level = self._read_setting(merged_env, "LOG_LEVEL", DEFAULT_LOG_LEVEL)
         self.database_path = self._read_path_setting(
             merged_env,
-            "DATABASE_PATH",
-            DEFAULT_DATABASE_PATH,
+            "SQLITE_DATABASE",
+            DEFAULT_SQLITE_DATABASE,
+        )
+        self.resume_directory = self._read_path_setting(
+            merged_env,
+            "RESUME_DIRECTORY",
+            DEFAULT_RESUME_DIRECTORY,
+        )
+        self.gmail_oauth_client = self._read_path_setting(
+            merged_env,
+            "GMAIL_OAUTH_CLIENT",
+            DEFAULT_GMAIL_OAUTH_CLIENT,
+        )
+        self.gmail_token = self._read_path_setting(
+            merged_env,
+            "GMAIL_TOKEN",
+            DEFAULT_GMAIL_TOKEN,
+        )
+        self.log_directory = self._read_path_setting(
+            merged_env,
+            "LOG_DIRECTORY",
+            DEFAULT_LOG_DIRECTORY,
         )
         self.enable_remoteok = self._read_bool_setting(merged_env, "ENABLE_REMOTEOK", True)
         self.enable_greenhouse = self._read_bool_setting(merged_env, "ENABLE_GREENHOUSE", True)
         self.openai_api_key = self._read_optional_setting(merged_env, "OPENAI_API_KEY")
-        self.google_client_id = self._read_optional_setting(merged_env, "GOOGLE_CLIENT_ID")
-        self.google_client_secret = self._read_optional_setting(merged_env, "GOOGLE_CLIENT_SECRET")
-        self.gmail_refresh_token = self._read_optional_setting(merged_env, "GMAIL_REFRESH_TOKEN")
 
         self._validate_mandatory_values()
 
@@ -61,19 +82,52 @@ class Settings:
 
     def _read_path_setting(self, env: Mapping[str, str], name: str, default: str) -> Path:
         raw_value = self._read_setting(env, name, default)
-        return Path(raw_value)
+        return self._resolve_path(raw_value)
+
+    @staticmethod
+    def _resolve_path(raw_value: str) -> Path:
+        path = Path(raw_value)
+        if path.is_absolute():
+            return path
+        return project_root() / path
 
     def _validate_mandatory_values(self) -> None:
         missing = []
         if not self.log_level:
             missing.append("LOG_LEVEL")
         if not self.database_path:
-            missing.append("DATABASE_PATH")
+            missing.append("SQLITE_DATABASE")
+        if not self.resume_directory:
+            missing.append("RESUME_DIRECTORY")
+        if not self.gmail_oauth_client:
+            missing.append("GMAIL_OAUTH_CLIENT")
+        if not self.gmail_token:
+            missing.append("GMAIL_TOKEN")
+        if not self.log_directory:
+            missing.append("LOG_DIRECTORY")
 
         if missing:
             raise ConfigurationError(
                 f"Missing mandatory configuration values: {', '.join(missing)}"
             )
+
+    def validate_runtime_paths(self) -> None:
+        """Validate and prepare runtime filesystem resources required at startup."""
+        if not self.gmail_oauth_client.exists() or not self.gmail_oauth_client.is_file():
+            raise ConfigurationError(
+                "Gmail OAuth client JSON not found: "
+                f"{self.gmail_oauth_client} (GMAIL_OAUTH_CLIENT)"
+            )
+
+        if not self.resume_directory.exists() or not self.resume_directory.is_dir():
+            raise ConfigurationError(
+                "Resume directory not found: "
+                f"{self.resume_directory} (RESUME_DIRECTORY)"
+            )
+
+        ensure_directory(self.database_path.parent)
+        ensure_directory(self.gmail_token.parent)
+        ensure_directory(self.log_directory)
 
     @classmethod
     def load(cls) -> "Settings":

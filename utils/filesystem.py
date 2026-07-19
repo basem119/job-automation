@@ -27,5 +27,7 @@ def ensure_file(path: Path, content: str = "") -> Path:
 
 def validate_required_directories() -> None:
     """Validate startup directories required for the current milestone."""
-    logs_dir = project_root() / "logs"
+    from config.settings import Settings
+
+    logs_dir = Settings.load().log_directory
     ensure_directory(logs_dir)

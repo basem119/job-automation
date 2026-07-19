@@ -17,7 +17,6 @@ from core.logging import configure_logging
 from core.version import version
 from infrastructure.sqlite.database import SQLiteDatabase
 from infrastructure.sqlite.job_repository import JobRepository
-from utils.filesystem import validate_required_directories
 from workflows.job_collection_workflow import JobCollectionWorkflow, build_collectors
 from workflows.job_analysis_workflow import JobAnalysisWorkflow
 from workflows.recruiter_discovery_workflow import RecruiterDiscoveryWorkflow
@@ -27,13 +26,12 @@ from workflows.application_draft_workflow import ApplicationDraftWorkflow
 def main() -> int:
     try:
         settings = Settings.load()
-        logger = configure_logging(settings.log_level)
+        settings.validate_runtime_paths()
+        logger = configure_logging(settings.log_level, settings.log_directory)
 
         logger.info("Application version: %s", version)
         logger.info("Configuration loaded")
         logger.info("Logging initialized")
-
-        validate_required_directories()
         logger.info("Filesystem validated")
 
         database = SQLiteDatabase(settings.database_path)
@@ -86,7 +84,7 @@ def main() -> int:
         logger.info("Recruiter discovery - Execution time: %.2f seconds", recruiter_summary["execution_time"])
 
         # Run application draft generation on recommended jobs
-        draft_workflow = ApplicationDraftWorkflow(repository=repository)
+        draft_workflow = ApplicationDraftWorkflow(repository=repository, settings=settings)
         draft_summary = draft_workflow.run()
 
         logger.info("Application draft - Recommended jobs:       %s", draft_summary["recommended_jobs"])

@@ -35,7 +35,8 @@ class JobCollectionWorkflow:
         if collectors is None and collector is not None:
             collectors = [collector]
         self.collectors = collectors or []
-        self.database = database or SQLiteDatabase()
+        settings = Settings.load()
+        self.database = database or SQLiteDatabase(settings.database_path)
         self.repository = repository or JobRepository(self.database)
 
     def run(self) -> dict[str, object]:
@@ -111,7 +112,8 @@ def build_collectors(settings: Settings) -> list[Collector]:
 
 def main() -> int:
     settings = Settings.load()
-    configure_logging(settings.log_level)
+    settings.validate_runtime_paths()
+    configure_logging(settings.log_level, settings.log_directory)
     logger.info("Application version: %s", version)
 
     try:

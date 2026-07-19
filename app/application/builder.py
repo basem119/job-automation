@@ -9,7 +9,7 @@ from app.application.email_template import EmailTemplate
 from app.application.models import Application
 from app.application.notes.service import ApplicationNotesService
 from app.application.subject_generator import SubjectGenerator
-from utils.filesystem import project_root
+from config.settings import Settings
 
 if TYPE_CHECKING:
     from app.recruiter.models import RecruiterContact
@@ -26,17 +26,20 @@ class ApplicationBuilder:
         self,
         resume_path: Path | None = None,
         template_dir: Path | None = None,
+        settings: Settings | None = None,
     ) -> None:
         """Initialize builder.
 
         Args:
             resume_path: Path to resume file. If None, will be resolved from profile.
             template_dir: Directory containing email templates
+            settings: Loaded application settings
         """
         self.resume_path = resume_path
         self.template_dir = template_dir
-        self.email_template = EmailTemplate(template_dir)
+        self.settings = settings or Settings.load()
         self.notes_service = ApplicationNotesService()
+        self.email_template = EmailTemplate(template_dir)
 
     def build(
         self,
@@ -123,8 +126,7 @@ class ApplicationBuilder:
                 return path
             return None
 
-        # Use project_root() for reliable path calculation
-        resume_dir = project_root() / "config" / "resumes"
+        resume_dir = self.settings.resume_directory
 
         # Use profile's default resume
         # Profile.resume() gets resume by name. Use first available.
@@ -136,7 +138,7 @@ class ApplicationBuilder:
                     logger.debug(f"Found resume: {name} -> {resume_path}")
                     return resume_path
 
-        # Fallback: look for any resume in config/resumes
+        # Fallback: use the first PDF in configured resume directory
         if resume_dir.exists():
             pdfs = list(resume_dir.glob("*.pdf"))
             if pdfs:

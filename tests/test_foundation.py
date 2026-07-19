@@ -17,30 +17,50 @@ class SettingsTests(unittest.TestCase):
         settings = Settings(env={})
 
         self.assertEqual(settings.log_level, "INFO")
-        self.assertEqual(settings.database_path, Path("data/jobs.db"))
+        self.assertEqual(settings.database_path, project_root() / "shared" / "database" / "jobs.db")
+        self.assertEqual(settings.resume_directory, project_root() / "shared" / "resumes")
+        self.assertEqual(settings.gmail_oauth_client, project_root() / "config" / "gmail_oauth_client.json")
+        self.assertEqual(settings.gmail_token, project_root() / "shared" / "oauth" / "token.json")
+        self.assertEqual(settings.log_directory, project_root() / "shared" / "logs")
         self.assertEqual(settings.openai_api_key, "")
-        self.assertEqual(settings.google_client_id, "")
-        self.assertEqual(settings.google_client_secret, "")
-        self.assertEqual(settings.gmail_refresh_token, "")
 
     def test_settings_overrides_values_from_environment(self) -> None:
         settings = Settings(
             env={
                 "LOG_LEVEL": "DEBUG",
-                "DATABASE_PATH": "custom/db.sqlite3",
+                "SQLITE_DATABASE": "custom/db.sqlite3",
+                "RESUME_DIRECTORY": "custom/resumes",
+                "GMAIL_OAUTH_CLIENT": "secrets/oauth_client.json",
+                "GMAIL_TOKEN": "secrets/token.json",
+                "LOG_DIRECTORY": "runtime/logs",
                 "OPENAI_API_KEY": "test-key",
-                "GOOGLE_CLIENT_ID": "google-id",
-                "GOOGLE_CLIENT_SECRET": "google-secret",
-                "GMAIL_REFRESH_TOKEN": "gmail-token",
             }
         )
 
         self.assertEqual(settings.log_level, "DEBUG")
-        self.assertEqual(settings.database_path, Path("custom/db.sqlite3"))
+        self.assertEqual(settings.database_path, project_root() / "custom" / "db.sqlite3")
+        self.assertEqual(settings.resume_directory, project_root() / "custom" / "resumes")
+        self.assertEqual(settings.gmail_oauth_client, project_root() / "secrets" / "oauth_client.json")
+        self.assertEqual(settings.gmail_token, project_root() / "secrets" / "token.json")
+        self.assertEqual(settings.log_directory, project_root() / "runtime" / "logs")
         self.assertEqual(settings.openai_api_key, "test-key")
-        self.assertEqual(settings.google_client_id, "google-id")
-        self.assertEqual(settings.google_client_secret, "google-secret")
-        self.assertEqual(settings.gmail_refresh_token, "gmail-token")
+
+    def test_settings_keeps_absolute_paths_unchanged(self) -> None:
+        settings = Settings(
+            env={
+                "SQLITE_DATABASE": "C:/runtime/jobs.db",
+                "RESUME_DIRECTORY": "C:/runtime/resumes",
+                "GMAIL_OAUTH_CLIENT": "C:/runtime/oauth_client.json",
+                "GMAIL_TOKEN": "C:/runtime/token.json",
+                "LOG_DIRECTORY": "C:/runtime/logs",
+            }
+        )
+
+        self.assertEqual(settings.database_path, Path("C:/runtime/jobs.db"))
+        self.assertEqual(settings.resume_directory, Path("C:/runtime/resumes"))
+        self.assertEqual(settings.gmail_oauth_client, Path("C:/runtime/oauth_client.json"))
+        self.assertEqual(settings.gmail_token, Path("C:/runtime/token.json"))
+        self.assertEqual(settings.log_directory, Path("C:/runtime/logs"))
 
 
 class FilesystemTests(unittest.TestCase):

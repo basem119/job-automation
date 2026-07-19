@@ -4,7 +4,7 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 from pathlib import Path
 
-from utils.filesystem import project_root
+from config.settings import Settings
 
 GMAIL_COMPOSE_SCOPE = "https://www.googleapis.com/auth/gmail.compose"
 
@@ -18,14 +18,14 @@ class GmailConfig:
     scopes: list[str] = field(default_factory=lambda: [GMAIL_COMPOSE_SCOPE])
 
     @classmethod
-    def load(cls) -> "GmailConfig":
-        """Load Gmail configuration with project defaults.
+    def load(cls, settings: Settings | None = None) -> "GmailConfig":
+        """Load Gmail configuration from application settings.
 
         Returns:
-            GmailConfig instance with default paths
+            GmailConfig instance with configured paths
         """
-        root = project_root()
+        runtime_settings = settings or Settings.load()
         return cls(
-            client_secret_path=root / "config" / "gmail_oauth_client.json",
-            token_path=root / "shared" / "oauth" / "token.json",
+            client_secret_path=runtime_settings.gmail_oauth_client,
+            token_path=runtime_settings.gmail_token,
         )
