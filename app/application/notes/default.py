@@ -56,6 +56,7 @@ class DefaultNotesProvider(NotesProvider):
         # Application reference info
         lines.append("=== APPLICATION REFERENCE ===")
         lines.append(self._format_field("Resume File", resume_filename or "N/A"))
+        lines.append(self._format_field("Job URL", job.url))
         recruiter_email = recruiter_contact.email if recruiter_contact else None
         lines.append(self._format_field("Recruiter Email", recruiter_email or "NOT FOUND"))
         if recruiter_contact and recruiter_contact.name:

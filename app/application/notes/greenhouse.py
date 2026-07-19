@@ -67,6 +67,7 @@ class GreenhouseNotesProvider(NotesProvider):
         lines.append(self._format_field("Job Source", job.source))
         if job.published_at:
             lines.append(self._format_field("Published", job.published_at.strftime("%Y-%m-%d")))
+        lines.append(self._format_field("Job URL", job.url))
         lines.append(self._format_field("Resume File", resume_filename or "N/A"))
         recruiter_email = recruiter_contact.email if recruiter_contact else None
         lines.append(self._format_field("Recruiter Email", recruiter_email or "NOT FOUND"))
