@@ -1,56 +1,40 @@
+# Runtime data
+shared/
+
+# Environment
+.env
+
+# Database
+*.db
+
+# Logs
+*.log
+
 # Python
-
-**pycache**/
+__pycache__/
 *.py[cod]
-*.pyo
-*.pyd
 
-# Virtual Environment
-
+# Virtual environments
 .venv/
 venv/
 
-# Environment Variables
-
-.env
-
 # IDE
-
 .vscode/
 .idea/
 
-# OS
-
-.DS_Store
-Thumbs.db
-
-# Logs
-
-*.log
-
-# SQLite
-
-*.db
-
-# Gmail secrets — never commit
-config/gmail_credentials.json
-config/gmail_oauth_client.json
-shared/oauth/token.json
-
 # Testing
-
 .pytest_cache/
 .coverage
 htmlcov/
 
 # Ruff
-
 .ruff_cache/
 
 # Build
-
 dist/
 build/
 *.egg-info/
 
-config/gmail_credentials.json
+# OS
+.DS_Store
+Thumbs.db

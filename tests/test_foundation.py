@@ -19,7 +19,7 @@ class SettingsTests(unittest.TestCase):
         self.assertEqual(settings.log_level, "INFO")
         self.assertEqual(settings.database_path, project_root() / "shared" / "database" / "jobs.db")
         self.assertEqual(settings.resume_directory, project_root() / "shared" / "resumes")
-        self.assertEqual(settings.gmail_oauth_client, project_root() / "config" / "gmail_oauth_client.json")
+        self.assertEqual(settings.gmail_oauth_client, project_root() / "shared" / "oauth" / "gmail_oauth_client.json")
         self.assertEqual(settings.gmail_token, project_root() / "shared" / "oauth" / "token.json")
         self.assertEqual(settings.log_directory, project_root() / "shared" / "logs")
         self.assertEqual(settings.openai_api_key, "")

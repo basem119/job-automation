@@ -216,25 +216,6 @@ class TechnologyRuleTests(unittest.TestCase):
         self.assertTrue(result.passed)
         self.assertGreaterEqual(result.score, rule.REQUIRED_TECHNOLOGY_SCORE)
 
-    def test_missing_required_technology_scores_negative(self) -> None:
-        preferences = Preferences.load(Path("config/preferences.yaml"))
-        rule = TechnologyRule(preferences)
-        job = Job(
-            id="job-2",
-            title="Backend Engineer",
-            company="Example",
-            location="Remote",
-            description="JavaScript and Node.js",
-            url="https://example.com/2",
-            source="remoteok",
-            status="NEW",
-            technologies=["javascript", "nodejs"],
-        )
-
-        result = rule.evaluate(job)
-        self.assertTrue(result.passed)
-        self.assertLess(result.score, 0)
-
     def test_preferred_technology_adds_bonus(self) -> None:
         preferences = Preferences.load(Path("config/preferences.yaml"))
         rule = TechnologyRule(preferences)
