@@ -233,10 +233,10 @@ class GmailDraftService:
             raise GmailDraftError(f"Draft creation failed: {exc}") from exc
 
         draft_id: str = result["id"]
-        logger.info(
-            "Draft created successfully — id=%s to=%s subject=%s",
-            draft_id,
-            to_email or "(empty)",
-            subject[:60],
-        )
+        # logger.info(
+        #     "Draft created successfully — id=%s to=%s subject=%s",
+        #     draft_id,
+        #     to_email or "(empty)",
+        #     subject[:60],
+        # )
         return draft_id

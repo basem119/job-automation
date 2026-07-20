@@ -148,7 +148,7 @@ class JobRepository:
 
             if existing is not None:
                 duplicate_count += 1
-                logger.info("Duplicate job skipped: %s", job_hash)
+                # logger.info("Duplicate job skipped: %s", job_hash)
                 continue
 
             try:

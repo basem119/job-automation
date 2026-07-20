@@ -12,7 +12,7 @@ from utils.filesystem import ensure_directory, project_root
 DEFAULT_LOG_LEVEL = "INFO"
 DEFAULT_SQLITE_DATABASE = "shared/database/jobs.db"
 DEFAULT_RESUME_DIRECTORY = "shared/resumes"
-DEFAULT_GMAIL_OAUTH_CLIENT = "config/gmail_oauth_client.json"
+DEFAULT_GMAIL_OAUTH_CLIENT = "shared/oauth/gmail_oauth_client.json"
 DEFAULT_GMAIL_TOKEN = "shared/oauth/token.json"
 DEFAULT_LOG_DIRECTORY = "shared/logs"
 

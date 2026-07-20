@@ -1,6 +1,7 @@
 python-dotenv
 requests
 pydantic
+PyYAML>=6.0
 
 # Gmail API (OAuth Desktop flow for personal account draft creation)
 google-auth-oauthlib
