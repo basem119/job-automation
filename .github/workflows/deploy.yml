@@ -1,0 +1,66 @@
+name: Deploy to Production
+
+on:
+  push:
+    branches:
+      - main
+
+concurrency:
+  group: production-deploy
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    env:
+      DEPLOY_HOST: ${{ secrets.DEPLOY_HOST }}
+      DEPLOY_USER: ${{ secrets.DEPLOY_USER }}
+      DEPLOY_PORT: ${{ secrets.DEPLOY_PORT || '22' }}
+      REMOTE_DEPLOY_SCRIPT: /opt/apps/job-automation/deploy.sh
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Configure SSH key
+        uses: webfactory/ssh-agent@v0.9.0
+        with:
+          ssh-private-key: ${{ secrets.DEPLOY_SSH_KEY }}
+
+      - name: Add VPS host key
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p ~/.ssh
+          ssh-keyscan -p "$DEPLOY_PORT" "$DEPLOY_HOST" >> ~/.ssh/known_hosts
+
+      - name: Build tracked-source release archive
+        shell: bash
+        run: |
+          set -euo pipefail
+          echo "Deployment started"
+          echo "Commit SHA: ${GITHUB_SHA}"
+          ARCHIVE_NAME="job-automation-${GITHUB_SHA}.tar.gz"
+          git archive --format=tar.gz --output "${ARCHIVE_NAME}" "${GITHUB_SHA}"
+          echo "ARCHIVE_NAME=${ARCHIVE_NAME}" >> "$GITHUB_ENV"
+
+      - name: Upload archive to VPS
+        shell: bash
+        run: |
+          set -euo pipefail
+          scp -P "$DEPLOY_PORT" "$ARCHIVE_NAME" "$DEPLOY_USER@$DEPLOY_HOST:/tmp/$ARCHIVE_NAME"
+
+      - name: Execute remote deployment
+        shell: bash
+        run: |
+          set -euo pipefail
+          ssh -p "$DEPLOY_PORT" "$DEPLOY_USER@$DEPLOY_HOST" \
+            "$REMOTE_DEPLOY_SCRIPT --commit ${GITHUB_SHA} --archive /tmp/${ARCHIVE_NAME}"
+
+      - name: Cleanup uploaded archive on VPS
+        if: always()
+        shell: bash
+        run: |
+          set -euo pipefail
+          ssh -p "$DEPLOY_PORT" "$DEPLOY_USER@$DEPLOY_HOST" "rm -f /tmp/${ARCHIVE_NAME}"
