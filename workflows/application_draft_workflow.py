@@ -65,6 +65,7 @@ class ApplicationDraftWorkflow:
             "drafts_without_recipient": 0,
             "validation_failures": 0,
             "draft_failures": 0,
+            "gmail_auth_failed": False,
         }
 
         try:
@@ -83,19 +84,25 @@ class ApplicationDraftWorkflow:
         logger.info("Processing %d recommended jobs for draft creation", len(rows))
 
         for row in rows:
-            self._process_row(row, profile, stats)
+            should_continue = self._process_row(row, profile, stats)
+            if not should_continue:
+                logger.error(
+                    "Stopping Gmail draft creation for remaining jobs due to authentication state. "
+                    "Other workflows are unaffected."
+                )
+                break
 
         self._log_statistics(stats)
         return stats
 
-    def _process_row(self, row, profile, stats: dict) -> None:
+    def _process_row(self, row, profile, stats: dict) -> bool:
         """Process one database row: build application and create draft."""
         job_id = row["job_id"]
 
         if "draft_id" in row.keys() and row["draft_id"]:
             logger.debug("Job %s already has a draft - skipping", job_id)
             stats["already_have_draft"] += 1
-            return
+            return True
 
         job = self._row_to_job(row)
         recruiter_contact = self._resolve_recruiter(row, job, stats)
@@ -132,7 +139,7 @@ class ApplicationDraftWorkflow:
         if not application:
             logger.warning("Failed to build application for job %s", job_id)
             stats["validation_failures"] += 1
-            return
+            return True
 
         stats["applications_built"] += 1
 
@@ -141,11 +148,12 @@ class ApplicationDraftWorkflow:
         except GmailDraftError as exc:
             logger.error("Draft creation failed for job %s: %s", job_id, exc)
             stats["draft_failures"] += 1
-            return
+            return True
         except GmailAuthError as exc:
             logger.error("Gmail authentication failed: %s", exc)
             stats["draft_failures"] += 1
-            return
+            stats["gmail_auth_failed"] = True
+            return False
 
         processing_notes = f"Recipient: {application.recipient_email or 'EMPTY'}"
         self.repository.update_draft(job_id, draft_id, processing_notes)
@@ -156,6 +164,8 @@ class ApplicationDraftWorkflow:
             stats["drafts_with_recipient"] += 1
         else:
             stats["drafts_without_recipient"] += 1
+
+        return True
 
     def _resolve_recruiter(self, row, job: Job, stats: dict) -> RecruiterContact | None:
         """Return recruiter contact from DB or attempt live discovery."""

@@ -2,6 +2,8 @@
 from __future__ import annotations
 
 import logging
+import os
+import tempfile
 from pathlib import Path
 from typing import TYPE_CHECKING
 
@@ -16,6 +18,10 @@ logger = logging.getLogger("job_automation")
 
 class GmailAuthError(ApplicationError):
     """Raised when Gmail authentication fails."""
+
+
+class GmailReauthRequiredError(GmailAuthError):
+    """Raised when token re-authentication is required and must be done manually."""
 
 
 class GmailClient:
@@ -39,6 +45,11 @@ class GmailClient:
         """
         self.config = config
         self._service = None
+
+    AUTH_STATE_VALID = "VALID"
+    AUTH_STATE_REFRESHED = "REFRESHED"
+    AUTH_STATE_REAUTH_REQUIRED = "REAUTH_REQUIRED"
+    AUTH_STATE_FAILED = "FAILED"
 
     def get_service(self):
         """Return authenticated Gmail API service (lazy, cached).
@@ -67,12 +78,13 @@ class GmailClient:
                 "Run: pip install google-auth-oauthlib google-auth-httplib2 google-api-python-client"
             ) from exc
 
-        credentials = self._resolve_credentials()
+        credentials = self._resolve_credentials(interactive=False)
         service = build("gmail", "v1", credentials=credentials)
-        logger.info("Gmail client initialized (account: %s)", credentials.token_uri)
+        logger.info("Gmail authentication: %s", self.AUTH_STATE_VALID)
+        logger.info("Gmail client initialized")
         return service
 
-    def _resolve_credentials(self):
+    def _resolve_credentials(self, interactive: bool = False):
         """Load, refresh, or obtain fresh OAuth credentials.
 
         Returns:
@@ -84,7 +96,6 @@ class GmailClient:
         from google.auth.exceptions import RefreshError
         from google.auth.transport.requests import Request
         from google.oauth2.credentials import Credentials
-        from google_auth_oauthlib.flow import InstalledAppFlow
 
         creds: Credentials | None = None
 
@@ -97,22 +108,54 @@ class GmailClient:
                 )
                 logger.info("OAuth token loaded from %s", token_path)
             except Exception as exc:
-                logger.warning("Failed to load OAuth token: %s — will re-authenticate", exc)
-                creds = None
+                logger.error("Gmail authentication: %s", self.AUTH_STATE_FAILED)
+                raise GmailAuthError(f"Failed to load OAuth token: {exc}") from exc
 
         # --- Refresh expired token ---
         if creds and creds.expired and creds.refresh_token:
             try:
                 creds.refresh(Request())
+                logger.info("Gmail authentication: %s", self.AUTH_STATE_REFRESHED)
                 logger.info("OAuth token refreshed successfully")
                 self._save_token(creds, token_path)
             except RefreshError as exc:
-                logger.warning("OAuth token refresh failed: %s — will re-authenticate", exc)
-                creds = None
+                logger.error(
+                    "OAuth token refresh failed: %s. Refresh token may be invalid or revoked.",
+                    exc,
+                )
+                logger.error("Gmail authentication: %s", self.AUTH_STATE_REAUTH_REQUIRED)
+                raise GmailReauthRequiredError(
+                    "Gmail re-authentication required: refresh token is invalid or revoked. "
+                    "Run local manual login to regenerate token.json and deploy it to production."
+                ) from exc
 
-        # --- Run browser OAuth flow ---
-        if not creds or not creds.valid:
-            creds = self._run_oauth_flow(token_path)
+        # --- Handle missing/invalid credentials ---
+        if not creds:
+            if interactive:
+                creds = self._run_oauth_flow(token_path)
+            else:
+                logger.error("Gmail authentication: %s", self.AUTH_STATE_REAUTH_REQUIRED)
+                raise GmailReauthRequiredError(
+                    "No Gmail OAuth token found. Run local manual login to generate token.json "
+                    "and upload it to production."
+                )
+
+        if creds and creds.expired and not creds.refresh_token:
+            logger.error("Gmail authentication: %s", self.AUTH_STATE_REAUTH_REQUIRED)
+            raise GmailReauthRequiredError(
+                "Gmail OAuth token is expired and has no refresh token. "
+                "Run local manual login to regenerate token.json."
+            )
+
+        if creds and not creds.valid:
+            if interactive:
+                creds = self._run_oauth_flow(token_path)
+            else:
+                logger.error("Gmail authentication: %s", self.AUTH_STATE_REAUTH_REQUIRED)
+                raise GmailReauthRequiredError(
+                    "Gmail OAuth token is invalid and cannot be used non-interactively. "
+                    "Run local manual login to regenerate token.json."
+                )
 
         return creds
 
@@ -142,12 +185,23 @@ class GmailClient:
             flow = InstalledAppFlow.from_client_secrets_file(
                 str(client_secret), self.config.scopes
             )
-            creds = flow.run_local_server(port=0)
+            creds = flow.run_local_server(
+                port=0,
+                access_type="offline",
+                prompt="consent",
+                include_granted_scopes="true",
+            )
         except Exception as exc:
+            logger.error("Gmail authentication: %s", self.AUTH_STATE_FAILED)
             raise GmailAuthError(f"OAuth browser flow failed: {exc}") from exc
 
         self._save_token(creds, token_path)
+        logger.info("Gmail authentication: %s", self.AUTH_STATE_VALID)
         return creds
+
+    def authenticate_interactive(self) -> None:
+        """Run interactive OAuth flow and persist token for later non-interactive use."""
+        self._resolve_credentials(interactive=True)
 
     @staticmethod
     def _save_token(creds, token_path: Path) -> None:
@@ -157,10 +211,31 @@ class GmailClient:
             creds: Credentials to persist
             token_path: Destination file path
         """
+        temp_path: Path | None = None
         try:
             ensure_directory(token_path.parent)
-            token_path.write_text(creds.to_json(), encoding="utf-8")
+            token_data = creds.to_json()
+
+            with tempfile.NamedTemporaryFile(
+                mode="w",
+                encoding="utf-8",
+                dir=str(token_path.parent),
+                prefix=f".{token_path.name}.",
+                suffix=".tmp",
+                delete=False,
+            ) as temp_file:
+                temp_file.write(token_data)
+                temp_file.flush()
+                os.fsync(temp_file.fileno())
+                temp_path = Path(temp_file.name)
+
+            os.replace(temp_path, token_path)
             logger.info("OAuth token saved to %s", token_path)
         except Exception as exc:
+            if temp_path and temp_path.exists():
+                try:
+                    temp_path.unlink()
+                except OSError:
+                    pass
             # Non-fatal: next run will just re-authenticate
             logger.warning("Failed to save OAuth token: %s", exc)

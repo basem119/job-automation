@@ -96,6 +96,13 @@ def main() -> int:
         logger.info("Application draft - Validation failures:     %s", draft_summary["validation_failures"])
         logger.info("Application draft - Draft failures:          %s", draft_summary["draft_failures"])
 
+        if draft_summary.get("gmail_auth_failed"):
+            logger.error(
+                "Application finished with Gmail authentication failure. "
+                "Other workflows completed, but interactive OAuth reauthorization is required."
+            )
+            return 2
+
         logger.info("Application initialized successfully")
         logger.info("Application finished")
         return 0

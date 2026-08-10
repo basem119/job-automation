@@ -1,6 +1,8 @@
 # Runtime data
 shared/*
 !shared/.gitkeep
+shared/oauth/token.json
+shared/oauth/gmail_oauth_client.json
 
 # Environment
 .env
