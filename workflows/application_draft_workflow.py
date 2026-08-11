@@ -84,7 +84,17 @@ class ApplicationDraftWorkflow:
         logger.info("Processing %d recommended jobs for draft creation", len(rows))
 
         for row in rows:
-            should_continue = self._process_row(row, profile, stats)
+            try:
+                should_continue = self._process_row(row, profile, stats)
+            except Exception as exc:
+                stats["draft_failures"] += 1
+                self._log_job_failure(
+                    row=row,
+                    category="unexpected",
+                    exc=exc,
+                )
+                continue
+
             if not should_continue:
                 logger.error(
                     "Stopping Gmail draft creation for remaining jobs due to authentication state. "
@@ -137,16 +147,25 @@ class ApplicationDraftWorkflow:
             missing_skills=missing_skills,
         )
         if not application:
-            logger.warning("Failed to build application for job %s", job_id)
+            logger.warning(
+                "Application build failed for job id=%s, company=%s, position=%s",
+                job_id,
+                row["company"] if "company" in row.keys() else "",
+                row["title"] if "title" in row.keys() else "",
+            )
             stats["validation_failures"] += 1
             return True
 
         stats["applications_built"] += 1
 
         try:
-            draft_id = self.gmail_service.create_draft_from_application(application)
+            draft_result = self.gmail_service.create_draft_from_application(application)
         except GmailDraftError as exc:
-            logger.error("Draft creation failed for job %s: %s", job_id, exc)
+            self._log_job_failure(
+                row=row,
+                category="draft_creation",
+                exc=exc,
+            )
             stats["draft_failures"] += 1
             return True
         except GmailAuthError as exc:
@@ -155,12 +174,12 @@ class ApplicationDraftWorkflow:
             stats["gmail_auth_failed"] = True
             return False
 
-        processing_notes = f"Recipient: {application.recipient_email or 'EMPTY'}"
-        self.repository.update_draft(job_id, draft_id, processing_notes)
-        logger.info("Draft ID stored for job %s: %s", job_id, draft_id)
+        processing_notes = f"Recipient: {draft_result.recipient_email or 'EMPTY'}"
+        self.repository.update_draft(job_id, draft_result.draft_id, processing_notes)
+        logger.info("Draft ID stored for job %s: %s", job_id, draft_result.draft_id)
 
         stats["drafts_created"] += 1
-        if application.recipient_email:
+        if draft_result.recipient_email:
             stats["drafts_with_recipient"] += 1
         else:
             stats["drafts_without_recipient"] += 1
@@ -176,12 +195,22 @@ class ApplicationDraftWorkflow:
         )
 
         if recruiter_email:
-            return RecruiterContact(
-                email=recruiter_email,
-                name=row["recruiter_name"] if "recruiter_name" in row.keys() else "",
-                source=row["recruiter_source"] if "recruiter_source" in row.keys() else "database",
-                confidence=row["recruiter_confidence"] if "recruiter_confidence" in row.keys() else 0,
-            )
+            try:
+                return RecruiterContact(
+                    email=recruiter_email,
+                    name=row["recruiter_name"] if "recruiter_name" in row.keys() else "",
+                    source=row["recruiter_source"] if "recruiter_source" in row.keys() else "database",
+                    confidence=row["recruiter_confidence"] if "recruiter_confidence" in row.keys() else 0,
+                )
+            except ValueError as exc:
+                logger.warning(
+                    "Ignoring malformed recruiter email for job id=%s, company=%s, position=%s: %s",
+                    row["job_id"] if "job_id" in row.keys() else "unknown",
+                    row["company"] if "company" in row.keys() else "",
+                    row["title"] if "title" in row.keys() else "",
+                    exc,
+                )
+                return None
 
         stats["recruiter_discovery_attempted"] += 1
         try:
@@ -202,6 +231,17 @@ class ApplicationDraftWorkflow:
             )
 
         return None
+
+    @staticmethod
+    def _log_job_failure(row, category: str, exc: Exception) -> None:
+        logger.error(
+            "Draft creation failed for job id=%s, company=%s, position=%s, category=%s: %s",
+            row["job_id"] if "job_id" in row.keys() else "unknown",
+            row["company"] if "company" in row.keys() else "",
+            row["title"] if "title" in row.keys() else "",
+            category,
+            exc,
+        )
 
     @staticmethod
     def _row_to_job(row) -> Job:

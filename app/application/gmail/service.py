@@ -3,6 +3,8 @@ from __future__ import annotations
 
 import base64
 import logging
+import re
+from dataclasses import dataclass
 from email.message import EmailMessage
 from pathlib import Path
 from typing import TYPE_CHECKING
@@ -18,6 +20,14 @@ logger = logging.getLogger("job_automation")
 
 class GmailDraftError(ApplicationError):
     """Raised when draft creation fails."""
+
+
+@dataclass(frozen=True)
+class DraftCreationResult:
+    """Draft creation outcome with effective recipient used in MIME headers."""
+
+    draft_id: str
+    recipient_email: str | None
 
 
 class GmailDraftService:
@@ -41,6 +51,10 @@ class GmailDraftService:
             client: Authenticated GmailClient instance
         """
         self._client = client
+
+    _EMAIL_PATTERN = re.compile(
+        r"^[A-Za-z0-9.!#$%&'*+/=?^_`{|}~-]+@[A-Za-z0-9-]+(?:\.[A-Za-z0-9-]+)+$"
+    )
 
     @staticmethod
     def _combine_body_and_notes(body: str, notes: str) -> str:
@@ -67,7 +81,7 @@ class GmailDraftService:
     def create_draft_from_application(
         self,
         application: Application,
-    ) -> str:
+    ) -> DraftCreationResult:
         """Build a MIME message from an Application and create a Gmail draft.
 
         Combines email body with application notes for user reference.
@@ -100,7 +114,7 @@ class GmailDraftService:
         subject: str,
         body: str,
         resume_path: Path,
-    ) -> str:
+    ) -> DraftCreationResult:
         """Build a MIME message and create a Gmail draft.
 
         Args:
@@ -117,14 +131,27 @@ class GmailDraftService:
         """
         self._validate(subject=subject, body=body, resume_path=resume_path)
 
-        raw_message = self._build_mime_message(
-            to_email=to_email,
-            subject=subject,
-            body=body,
-            resume_path=resume_path,
-        )
+        sanitized_subject = self._sanitize_subject(subject)
+        normalized_recipient, recipient_issue = self._normalize_recipient(to_email)
+        if recipient_issue:
+            logger.warning("Invalid draft recipient ignored: %s", recipient_issue)
 
-        return self._call_api(raw_message, to_email=to_email, subject=subject)
+        try:
+            raw_message = self._build_mime_message(
+                to_email=normalized_recipient,
+                subject=sanitized_subject,
+                body=body,
+                resume_path=resume_path,
+            )
+        except ValueError as exc:
+            raise GmailDraftError(f"Header validation failed: {exc}") from exc
+
+        draft_id = self._call_api(
+            raw_message,
+            to_email=normalized_recipient,
+            subject=sanitized_subject,
+        )
+        return DraftCreationResult(draft_id=draft_id, recipient_email=normalized_recipient)
 
     # ------------------------------------------------------------------
     # Private
@@ -150,6 +177,38 @@ class GmailDraftService:
             raise GmailDraftError("Resume path is required")
         if not Path(resume_path).exists():
             raise GmailDraftError(f"Resume file not found: {resume_path}")
+
+    @classmethod
+    def _normalize_recipient(cls, to_email: str | None) -> tuple[str | None, str | None]:
+        """Normalize recipient when safe; return None for missing/invalid recipient.
+
+        If CR/LF appears in the raw value, treat the recipient as invalid and missing
+        instead of mutating it, to avoid transforming malformed input into a different
+        address.
+        """
+        if to_email is None:
+            return None, None
+
+        raw_value = str(to_email)
+        if "\r" in raw_value or "\n" in raw_value:
+            return None, "recipient contains CR/LF characters"
+
+        candidate = raw_value.strip()
+        if not candidate:
+            return None, None
+
+        if cls._EMAIL_PATTERN.fullmatch(candidate) is None:
+            return None, "recipient format is invalid"
+
+        return candidate, None
+
+    @staticmethod
+    def _sanitize_subject(subject: str) -> str:
+        """Normalize subject for safe MIME header assignment."""
+        sanitized = " ".join(subject.replace("\r", " ").replace("\n", " ").split()).strip()
+        if not sanitized:
+            raise GmailDraftError("Email subject is missing or empty after sanitization")
+        return sanitized
 
     @staticmethod
     def _build_mime_message(
