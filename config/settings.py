@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import os
+import re
 from pathlib import Path
 from typing import Mapping
 
@@ -19,6 +20,8 @@ DEFAULT_LOG_DIRECTORY = "shared/logs"
 
 class Settings:
     """Application settings loaded from the environment and .env file."""
+
+    _WINDOWS_ABSOLUTE_PATH_PATTERN = re.compile(r"^[A-Za-z]:[\\/].*")
 
     def __init__(self, env: Mapping[str, str] | None = None) -> None:
         load_dotenv(project_root() / ".env", override=False)
@@ -87,7 +90,7 @@ class Settings:
     @staticmethod
     def _resolve_path(raw_value: str) -> Path:
         path = Path(raw_value)
-        if path.is_absolute():
+        if path.is_absolute() or Settings._WINDOWS_ABSOLUTE_PATH_PATTERN.match(raw_value):
             return path
         return project_root() / path
 

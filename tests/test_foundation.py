@@ -90,7 +90,9 @@ class VersionTests(unittest.TestCase):
 
 class ProjectRootTests(unittest.TestCase):
     def test_project_root_points_to_repository_root(self) -> None:
-        self.assertEqual(project_root().name, "job-automation")
+        root = project_root()
+        self.assertTrue((root / "app" / "main.py").exists())
+        self.assertTrue((root / "pyproject.toml").exists())
 
 
 if __name__ == "__main__":
