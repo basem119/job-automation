@@ -133,11 +133,11 @@ class GreenhouseCollectorTests(unittest.TestCase):
         ]
 
         collector = GreenhouseCollector(client=client, parser=parser)
-        jobs = collector.collect()
+        result = collector.collect()
 
-        self.assertEqual(len(jobs), 1)
-        self.assertEqual(jobs[0].source, "greenhouse")
-        self.assertEqual(jobs[0].title, "Engineer")
+        self.assertEqual(len(result.jobs), 1)
+        self.assertEqual(result.jobs[0].source, "greenhouse")
+        self.assertEqual(result.jobs[0].title, "Engineer")
 
 
 class GreenhouseHttpClientTests(unittest.TestCase):

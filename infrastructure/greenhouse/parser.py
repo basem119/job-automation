@@ -7,6 +7,7 @@ from html import unescape
 from typing import Any
 
 from domain.job import Job
+from infrastructure.collectors.collector import CollectionResult
 
 logger = logging.getLogger("job_automation")
 
@@ -15,22 +16,27 @@ class GreenhouseParser:
     """Convert Greenhouse payload records into generic Job objects."""
 
     def parse(self, payload: list[dict[str, Any]] | dict[str, Any]) -> list[Job]:
+        return self.parse_collection(payload).jobs
+
+    def parse_collection(self, payload: list[dict[str, Any]] | dict[str, Any]) -> CollectionResult:
         jobs_payload = payload.get("jobs") if isinstance(payload, dict) else payload
         if not isinstance(jobs_payload, list):
             raise ValueError("Greenhouse payload must be a list or a dict with a jobs list")
 
         jobs: list[Job] = []
+        failed_records = 0
 
         for item in jobs_payload:
             try:
                 job = self._parse_record(item)
             except (TypeError, ValueError) as exc:
                 logger.warning("Ignoring malformed Greenhouse record: %s", exc)
+                failed_records += 1
                 continue
 
             jobs.append(job)
 
-        return jobs
+        return CollectionResult(jobs=jobs, failed_records=failed_records)
 
     def _parse_record(self, item: dict[str, Any]) -> Job:
         if not isinstance(item, dict):

@@ -1,7 +1,6 @@
 from __future__ import annotations
 
-from domain.job import Job
-from infrastructure.collectors.collector import Collector
+from infrastructure.collectors.collector import CollectionResult, Collector
 from infrastructure.greenhouse.client import GreenhouseClient
 from infrastructure.greenhouse.parser import GreenhouseParser
 
@@ -19,6 +18,6 @@ class GreenhouseCollector(Collector):
         self.client = client or GreenhouseClient()
         self.parser = parser or GreenhouseParser()
 
-    def collect(self) -> list[Job]:
+    def collect(self) -> CollectionResult:
         payload = self.client.fetch_jobs()
-        return self.parser.parse(payload)
+        return self.parser.parse_collection(payload)

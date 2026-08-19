@@ -23,6 +23,11 @@ class SettingsTests(unittest.TestCase):
         self.assertEqual(settings.gmail_token, project_root() / "shared" / "oauth" / "token.json")
         self.assertEqual(settings.log_directory, project_root() / "shared" / "logs")
         self.assertEqual(settings.openai_api_key, "")
+        self.assertFalse(settings.enable_adzuna)
+        self.assertFalse(settings.enable_jobicy)
+        self.assertEqual(settings.adzuna_app_id, "")
+        self.assertEqual(settings.adzuna_app_key, "")
+        self.assertEqual(settings.adzuna_country, "us")
 
     def test_settings_overrides_values_from_environment(self) -> None:
         settings = Settings(
@@ -34,6 +39,11 @@ class SettingsTests(unittest.TestCase):
                 "GMAIL_TOKEN": "secrets/token.json",
                 "LOG_DIRECTORY": "runtime/logs",
                 "OPENAI_API_KEY": "test-key",
+                "ADZUNA_ENABLED": "true",
+                "JOBICY_ENABLED": "yes",
+                "ADZUNA_APP_ID": "app-id",
+                "ADZUNA_APP_KEY": "app-key",
+                "ADZUNA_COUNTRY": "gb",
             }
         )
 
@@ -44,6 +54,11 @@ class SettingsTests(unittest.TestCase):
         self.assertEqual(settings.gmail_token, project_root() / "secrets" / "token.json")
         self.assertEqual(settings.log_directory, project_root() / "runtime" / "logs")
         self.assertEqual(settings.openai_api_key, "test-key")
+        self.assertTrue(settings.enable_adzuna)
+        self.assertTrue(settings.enable_jobicy)
+        self.assertEqual(settings.adzuna_app_id, "app-id")
+        self.assertEqual(settings.adzuna_app_key, "app-key")
+        self.assertEqual(settings.adzuna_country, "gb")
 
     def test_settings_keeps_absolute_paths_unchanged(self) -> None:
         settings = Settings(

@@ -1,7 +1,6 @@
 from __future__ import annotations
 
-from domain.job import Job
-from infrastructure.collectors.collector import Collector
+from infrastructure.collectors.collector import CollectionResult, Collector
 from infrastructure.remoteok.client import RemoteOkClient
 from infrastructure.remoteok.parser import RemoteOkParser
 
@@ -15,6 +14,6 @@ class RemoteOkCollector(Collector):
         self.client = client or RemoteOkClient()
         self.parser = parser or RemoteOkParser()
 
-    def collect(self) -> list[Job]:
+    def collect(self) -> CollectionResult:
         payload = self.client.fetch_jobs()
-        return self.parser.parse(payload)
+        return self.parser.parse_collection(payload)

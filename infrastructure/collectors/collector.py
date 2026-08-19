@@ -1,18 +1,40 @@
 from __future__ import annotations
 
 from abc import ABC, abstractmethod
+from dataclasses import dataclass
 
 from domain.job import Job
+
+
+@dataclass
+class CollectionResult:
+    """Normalized output from a collector run."""
+
+    jobs: list[Job]
+    failed_records: int = 0
 
 
 class Collector(ABC):
     """Base interface for all job collectors."""
 
     name: str = "collector"
+    enabled: bool = True
 
     @abstractmethod
-    def collect(self) -> list[Job]:
+    def collect(self) -> CollectionResult | list[Job]:
         """Fetch and normalize jobs from one source."""
+
+
+class DisabledCollector(Collector):
+    """No-op collector used to report configured but disabled sources."""
+
+    enabled = False
+
+    def __init__(self, name: str) -> None:
+        self.name = name
+
+    def collect(self) -> CollectionResult:
+        return CollectionResult(jobs=[], failed_records=0)
 
 
 class CollectorRegistry:

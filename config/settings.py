@@ -56,6 +56,19 @@ class Settings:
         )
         self.enable_remoteok = self._read_bool_setting(merged_env, "ENABLE_REMOTEOK", True)
         self.enable_greenhouse = self._read_bool_setting(merged_env, "ENABLE_GREENHOUSE", True)
+        self.enable_adzuna = self._read_bool_setting(
+            merged_env,
+            "ADZUNA_ENABLED",
+            self._read_bool_setting(merged_env, "ENABLE_ADZUNA", False),
+        )
+        self.enable_jobicy = self._read_bool_setting(
+            merged_env,
+            "JOBICY_ENABLED",
+            self._read_bool_setting(merged_env, "ENABLE_JOBICY", False),
+        )
+        self.adzuna_app_id = self._read_optional_setting(merged_env, "ADZUNA_APP_ID")
+        self.adzuna_app_key = self._read_optional_setting(merged_env, "ADZUNA_APP_KEY")
+        self.adzuna_country = self._read_setting(merged_env, "ADZUNA_COUNTRY", "us").lower()
         self.openai_api_key = self._read_optional_setting(merged_env, "OPENAI_API_KEY")
 
         self._validate_mandatory_values()
