@@ -59,6 +59,16 @@ class _FakeGmailService:
         )
 
 
+class _FakeImapClient:
+    """Stub IMAP client so workflow init doesn't require real credentials."""
+
+    def append_draft(self, mime_bytes: bytes) -> str:
+        return "draft-fake"
+
+    def disconnect(self) -> None:
+        pass
+
+
 class ApplicationDraftWorkflowIsolationTests(unittest.TestCase):
     def setUp(self) -> None:
         self.temp_dir = tempfile.TemporaryDirectory()
@@ -69,6 +79,7 @@ class ApplicationDraftWorkflowIsolationTests(unittest.TestCase):
         self.workflow = ApplicationDraftWorkflow(
             repository=self.repository,
             settings=Settings.load(),
+            gmail_client=_FakeImapClient(),
         )
 
         self.fake_builder = _FakeBuilder()
