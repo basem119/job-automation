@@ -5,8 +5,7 @@ import json
 import logging
 
 from app.application.builder import ApplicationBuilder
-from app.application.gmail.client import GmailAuthError, GmailClient
-from app.application.gmail.config import GmailConfig
+from app.application.gmail.imap_client import GmailImapClient, GmailImapError
 from app.application.gmail.service import GmailDraftError, GmailDraftService
 from app.recruiter.models import RecruiterContact
 from app.recruiter.service import RecruiterDiscoveryService
@@ -25,28 +24,26 @@ class ApplicationDraftWorkflow:
         self,
         repository: JobRepository,
         settings: Settings | None = None,
-        gmail_config: GmailConfig | None = None,
+        gmail_client: GmailImapClient | None = None,
     ) -> None:
         """Initialize workflow.
 
         Args:
             repository: Job repository
             settings: Loaded application settings
-            gmail_config: Gmail OAuth configuration. Defaults to settings-backed config.
+            gmail_client: IMAP client. Defaults to settings-backed client.
         """
         self.repository = repository
         self.settings = settings or Settings.load()
-        self.gmail_config = gmail_config or GmailConfig.load(self.settings)
         self.builder = ApplicationBuilder(settings=self.settings)
         self.recruiter_service = RecruiterDiscoveryService()
 
-        client = GmailClient(self.gmail_config)
-        self.gmail_service = GmailDraftService(client)
-        logger.info(
-            "ApplicationDraftWorkflow ready (client_secret=%s, token=%s)",
-            self.gmail_config.client_secret_path,
-            self.gmail_config.token_path,
+        client = gmail_client or GmailImapClient(
+            email=self.settings.gmail_address,
+            app_password=self.settings.gmail_app_password,
         )
+        self.gmail_service = GmailDraftService(client)
+        logger.info("ApplicationDraftWorkflow ready (IMAP, address=%s)", self.settings.gmail_address)
 
     def run(self) -> dict:
         """Execute draft generation workflow.
@@ -168,8 +165,8 @@ class ApplicationDraftWorkflow:
             )
             stats["draft_failures"] += 1
             return True
-        except GmailAuthError as exc:
-            logger.error("Gmail authentication failed: %s", exc)
+        except GmailImapError as exc:
+            logger.error("Gmail IMAP authentication failed: %s", exc)
             stats["draft_failures"] += 1
             stats["gmail_auth_failed"] = True
             return False

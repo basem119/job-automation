@@ -34,12 +34,14 @@ class FakeCredentials:
         refresh_token: str | None,
         refresh_exception: Exception | None = None,
         token_json: str = '{"token": "value"}',
+        expiry=None,
     ) -> None:
         self.valid = valid
         self.expired = expired
         self.refresh_token = refresh_token
         self.refresh_exception = refresh_exception
         self.token_json = token_json
+        self.expiry = expiry
 
     @classmethod
     def from_authorized_user_file(cls, _path: str, _scopes: list[str]):

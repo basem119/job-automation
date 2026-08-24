@@ -2,6 +2,7 @@ import sys
 import tempfile
 import unittest
 from pathlib import Path
+from unittest.mock import patch
 
 ROOT_DIR = Path(__file__).resolve().parents[1]
 if str(ROOT_DIR) not in sys.path:
@@ -13,7 +14,9 @@ from utils.filesystem import ensure_directory, ensure_file, project_root
 
 
 class SettingsTests(unittest.TestCase):
-    def test_settings_uses_defaults_when_values_are_missing(self) -> None:
+    @patch("config.settings.load_dotenv")
+    @patch.dict("os.environ", {}, clear=True)
+    def test_settings_uses_defaults_when_values_are_missing(self, _mock_dotenv) -> None:
         settings = Settings(env={})
 
         self.assertEqual(settings.log_level, "INFO")

@@ -1,7 +1,6 @@
 """Gmail draft service — builds MIME messages and creates drafts only."""
 from __future__ import annotations
 
-import base64
 import logging
 import re
 from dataclasses import dataclass
@@ -12,7 +11,7 @@ from typing import TYPE_CHECKING
 from core.exceptions import ApplicationError
 
 if TYPE_CHECKING:
-    from app.application.gmail.client import GmailClient
+    from app.application.gmail.imap_client import GmailImapClient
     from app.application.models import Application
 
 logger = logging.getLogger("job_automation")
@@ -40,15 +39,15 @@ class GmailDraftService:
     - Base64-URL-safe encode for Gmail API
     - Call users().drafts().create() and return the Draft ID
 
-    Authentication is entirely delegated to GmailClient.
+    Authentication is entirely delegated to GmailImapClient.
     No auth logic lives here.
     """
 
-    def __init__(self, client: GmailClient) -> None:
+    def __init__(self, client: GmailImapClient) -> None:
         """Initialize draft service.
 
         Args:
-            client: Authenticated GmailClient instance
+            client: Authenticated GmailImapClient instance
         """
         self._client = client
 
@@ -216,10 +215,8 @@ class GmailDraftService:
         subject: str,
         body: str,
         resume_path: Path,
-    ) -> str:
-        """Build a Base64-URL-safe encoded MIME message for the Gmail API.
-
-        Uses Python's EmailMessage (RFC 6532) which the Gmail API accepts.
+    ) -> bytes:
+        """Build a MIME message for IMAP APPEND.
 
         Args:
             to_email: Recipient address, or None
@@ -228,7 +225,7 @@ class GmailDraftService:
             resume_path: Resume file to attach
 
         Returns:
-            Base64-URL-safe encoded MIME string
+            Raw MIME message bytes
 
         Raises:
             GmailDraftError: If the attachment cannot be read
@@ -251,51 +248,27 @@ class GmailDraftService:
         )
         logger.debug("Resume attached: %s (%d bytes)", Path(resume_path).name, len(resume_data))
 
-        raw = base64.urlsafe_b64encode(msg.as_bytes()).decode()
-        return raw
+        return msg.as_bytes()
 
-    def _call_api(self, raw_message: str, to_email: str | None, subject: str) -> str:
-        """Submit the encoded message to the Gmail drafts API.
+    def _call_api(self, mime_bytes: bytes, to_email: str | None, subject: str) -> str:
+        """Submit the MIME message to Gmail Drafts via IMAP.
 
         Args:
-            raw_message: Base64-URL-safe encoded MIME message
+            mime_bytes: Raw MIME message bytes
             to_email: Recipient address (for logging only)
             subject: Subject line (for logging only)
 
         Returns:
-            Gmail Draft ID
+            IMAP draft UID
 
         Raises:
-            GmailDraftError: On API failure
+            GmailDraftError: On IMAP failure
         """
-        try:
-            from googleapiclient.errors import HttpError
-        except ImportError as exc:
-            raise GmailDraftError(
-                "Google API client library not installed. "
-                "Run: pip install google-api-python-client"
-            ) from exc
+        from app.application.gmail.imap_client import GmailImapError
 
         try:
-            service = self._client.get_service()
-            result = (
-                service.users()
-                .drafts()
-                .create(userId="me", body={"message": {"raw": raw_message}})
-                .execute()
-            )
-        except HttpError as exc:
-            raise GmailDraftError(
-                f"Gmail API error {exc.status_code}: {exc.reason}"
-            ) from exc
-        except Exception as exc:
+            draft_id = self._client.append_draft(mime_bytes)
+        except GmailImapError as exc:
             raise GmailDraftError(f"Draft creation failed: {exc}") from exc
 
-        draft_id: str = result["id"]
-        # logger.info(
-        #     "Draft created successfully — id=%s to=%s subject=%s",
-        #     draft_id,
-        #     to_email or "(empty)",
-        #     subject[:60],
-        # )
         return draft_id

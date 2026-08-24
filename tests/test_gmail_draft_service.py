@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import base64
 import tempfile
 import unittest
 from email import policy
@@ -10,46 +9,15 @@ from pathlib import Path
 from app.application.gmail.service import DraftCreationResult, GmailDraftService
 
 
-class _FakeDraftRequest:
-    def __init__(self, draft_id: str) -> None:
-        self._draft_id = draft_id
-
-    def execute(self) -> dict:
-        return {"id": self._draft_id}
-
-
-class _FakeDraftsApi:
-    def __init__(self) -> None:
-        self.last_body: dict | None = None
-
-    def create(self, userId: str, body: dict):
-        self.last_body = body
-        return _FakeDraftRequest("draft-123")
-
-
-class _FakeUsersApi:
-    def __init__(self, drafts_api: _FakeDraftsApi) -> None:
-        self._drafts_api = drafts_api
-
-    def drafts(self) -> _FakeDraftsApi:
-        return self._drafts_api
-
-
-class _FakeGmailServiceApi:
-    def __init__(self) -> None:
-        self.drafts_api = _FakeDraftsApi()
-        self.users_api = _FakeUsersApi(self.drafts_api)
-
-    def users(self) -> _FakeUsersApi:
-        return self.users_api
-
-
 class _FakeClient:
-    def __init__(self) -> None:
-        self.service = _FakeGmailServiceApi()
+    """Fake IMAP client that captures appended MIME bytes."""
 
-    def get_service(self):
-        return self.service
+    def __init__(self) -> None:
+        self.last_mime_bytes: bytes | None = None
+
+    def append_draft(self, mime_bytes: bytes) -> str:
+        self.last_mime_bytes = mime_bytes
+        return "draft-123"
 
 
 class GmailDraftServiceHeaderSafetyTests(unittest.TestCase):
@@ -64,9 +32,7 @@ class GmailDraftServiceHeaderSafetyTests(unittest.TestCase):
         self.temp_dir.cleanup()
 
     def _parse_last_message(self):
-        raw = self.fake_client.service.drafts_api.last_body["message"]["raw"]
-        decoded = base64.urlsafe_b64decode(raw.encode("utf-8"))
-        return BytesParser(policy=policy.default).parsebytes(decoded)
+        return BytesParser(policy=policy.default).parsebytes(self.fake_client.last_mime_bytes)
 
     def test_valid_recipient_sets_to_header(self) -> None:
         result = self.service.create_draft(

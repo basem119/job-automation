@@ -84,6 +84,25 @@ class GmailClient:
         logger.info("Gmail client initialized")
         return service
 
+    @staticmethod
+    def _needs_refresh(creds) -> bool:
+        """Check if credentials need refresh (expired, near-expiry, or unknown expiry)."""
+        import datetime
+
+        if creds.expired:
+            return True
+        # If expiry wasn't parsed from file, token may silently be expired
+        if creds.expiry is None:
+            return True
+        # Proactively refresh if token expires within 5 minutes
+        now = datetime.datetime.utcnow()
+        if hasattr(creds.expiry, "tzinfo") and creds.expiry.tzinfo is not None:
+            import datetime as dt
+            now = datetime.datetime.now(dt.timezone.utc)
+        if creds.expiry - now < datetime.timedelta(minutes=5):
+            return True
+        return False
+
     def _resolve_credentials(self, interactive: bool = False):
         """Load, refresh, or obtain fresh OAuth credentials.
 
@@ -111,8 +130,8 @@ class GmailClient:
                 logger.error("Gmail authentication: %s", self.AUTH_STATE_FAILED)
                 raise GmailAuthError(f"Failed to load OAuth token: {exc}") from exc
 
-        # --- Refresh expired token ---
-        if creds and creds.expired and creds.refresh_token:
+        # --- Refresh expired or near-expiry token ---
+        if creds and creds.refresh_token and self._needs_refresh(creds):
             try:
                 creds.refresh(Request())
                 logger.info("Gmail authentication: %s", self.AUTH_STATE_REFRESHED)
@@ -120,13 +139,17 @@ class GmailClient:
                 self._save_token(creds, token_path)
             except RefreshError as exc:
                 logger.error(
-                    "OAuth token refresh failed: %s. Refresh token may be invalid or revoked.",
+                    "OAuth token refresh failed: %s. Refresh token may be invalid or revoked. "
+                    "If your Google Cloud project is in 'Testing' mode, refresh tokens expire "
+                    "after 7 days. Publish the app to 'Production' in Google Cloud Console "
+                    "(OAuth consent screen) to get non-expiring refresh tokens.",
                     exc,
                 )
                 logger.error("Gmail authentication: %s", self.AUTH_STATE_REAUTH_REQUIRED)
                 raise GmailReauthRequiredError(
                     "Gmail re-authentication required: refresh token is invalid or revoked. "
-                    "Run local manual login to regenerate token.json and deploy it to production."
+                    "If your app is in 'Testing' mode on Google Cloud, refresh tokens expire after 7 days. "
+                    "Fix: publish app to 'Production' in OAuth consent screen, then re-run gmail_login.py."
                 ) from exc
 
         # --- Handle missing/invalid credentials ---
