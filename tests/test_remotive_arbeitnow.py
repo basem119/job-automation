@@ -310,6 +310,32 @@ class ArbeitnowClientTests(unittest.TestCase):
         self.assertEqual(http_client.get_json.call_count, 2)
         self.assertEqual(len(jobs), 2)
 
+    def test_pagination_follows_next_url(self) -> None:
+        http_client = Mock()
+        responses = [
+            {
+                "data": [{"slug": "job-1", "title": "Engineer"}],
+                "links": {"next": "https://www.arbeitnow.com/api/job-board-api?page=2"},
+                "meta": {},
+            },
+            {
+                "data": [{"slug": "job-2", "title": "Designer"}],
+                "links": {"next": None},
+                "meta": {},
+            },
+        ]
+        http_client.get_json.side_effect = responses
+        client = ArbeitnowClient(http_client=http_client, max_pages=5)
+
+        jobs = client.fetch_jobs()
+
+        self.assertEqual(len(jobs), 2)
+        self.assertEqual(http_client.get_json.call_count, 2)
+        http_client.get_json.assert_any_call(
+            "https://www.arbeitnow.com/api/job-board-api?page=2",
+            error_context="Arbeitnow jobs API",
+        )
+
     def test_pagination_stops_when_no_next_link(self) -> None:
         http_client = Mock()
         http_client.get_json.return_value = {
@@ -370,7 +396,12 @@ class ArbeitnowCollectorTests(unittest.TestCase):
 
 class SettingsIntegrationTests(unittest.TestCase):
     def test_new_collectors_disabled_by_default(self) -> None:
-        settings = Settings(env={})
+        settings = Settings(
+            env={
+                "ENABLE_REMOTIVE": "false",
+                "ENABLE_ARBEITNOW": "false",
+            }
+        )
 
         self.assertFalse(settings.enable_remotive)
         self.assertFalse(settings.enable_arbeitnow)

@@ -258,6 +258,8 @@ class JobicyClientCollectorTests(unittest.TestCase):
                 "ENABLE_GREENHOUSE": "false",
                 "ADZUNA_ENABLED": "false",
                 "JOBICY_ENABLED": "false",
+                "ENABLE_REMOTIVE": "false",
+                "ENABLE_ARBEITNOW": "false",
             }
         )
 
