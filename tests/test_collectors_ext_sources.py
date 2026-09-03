@@ -262,9 +262,9 @@ class JobicyClientCollectorTests(unittest.TestCase):
         )
 
         collectors = build_collectors(settings)
-        self.assertEqual(len(collectors), 4)
+        self.assertEqual(len(collectors), 6)
         disabled = [collector for collector in collectors if not getattr(collector, "enabled", True)]
-        self.assertEqual(len(disabled), 4)
+        self.assertEqual(len(disabled), 6)
 
 
 class SourceIsolationWorkflowTests(unittest.TestCase):

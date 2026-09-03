@@ -15,10 +15,12 @@ from core.logging import configure_logging
 from core.version import version
 from infrastructure.adzuna.client import AdzunaClient
 from infrastructure.adzuna.collector import AdzunaCollector
+from infrastructure.arbeitnow.collector import ArbeitnowCollector
 from infrastructure.collectors.collector import CollectionResult, Collector, CollectorRegistry, DisabledCollector
 from infrastructure.greenhouse.collector import GreenhouseCollector
 from infrastructure.jobicy.collector import JobicyCollector
 from infrastructure.remoteok.collector import RemoteOkCollector
+from infrastructure.remotive.collector import RemotiveCollector
 from infrastructure.sqlite.database import SQLiteDatabase
 from infrastructure.sqlite.job_repository import JobRepository
 
@@ -228,6 +230,16 @@ def build_collectors(settings: Settings) -> list[Collector]:
         registry.register("jobicy", JobicyCollector())
     else:
         registry.register("jobicy", DisabledCollector("Jobicy"))
+
+    if settings.enable_remotive:
+        registry.register("remotive", RemotiveCollector())
+    else:
+        registry.register("remotive", DisabledCollector("Remotive"))
+
+    if settings.enable_arbeitnow:
+        registry.register("arbeitnow", ArbeitnowCollector())
+    else:
+        registry.register("arbeitnow", DisabledCollector("Arbeitnow"))
 
     return registry.collectors
 

@@ -66,6 +66,16 @@ class Settings:
             "JOBICY_ENABLED",
             self._read_bool_setting(merged_env, "ENABLE_JOBICY", False),
         )
+        self.enable_remotive = self._read_bool_setting(
+            merged_env,
+            "REMOTIVE_ENABLED",
+            self._read_bool_setting(merged_env, "ENABLE_REMOTIVE", False),
+        )
+        self.enable_arbeitnow = self._read_bool_setting(
+            merged_env,
+            "ARBEITNOW_ENABLED",
+            self._read_bool_setting(merged_env, "ENABLE_ARBEITNOW", False),
+        )
         self.adzuna_app_id = self._read_optional_setting(merged_env, "ADZUNA_APP_ID")
         self.adzuna_app_key = self._read_optional_setting(merged_env, "ADZUNA_APP_KEY")
         self.adzuna_country = self._read_setting(merged_env, "ADZUNA_COUNTRY", "us").lower()
