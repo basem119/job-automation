@@ -28,7 +28,7 @@ def main() -> int:
         settings = Settings.load()
         settings.validate_runtime_paths()
         logger = configure_logging(settings.log_level, settings.log_directory)
-
+        #republish
         logger.info("Application version: %s", version)
         logger.info("Configuration loaded")
         logger.info("Logging initialized")
